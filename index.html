@@ -21,6 +21,9 @@
     padding: 16px;
     margin-bottom: 12px;
   }
+  .kai-atama {
+    cursor: pointer;
+  }
   .event-mei {
     font-size: 13px;
     color: #888;
@@ -43,6 +46,27 @@
     font-size: 14px;
     color: #555;
   }
+  .nyuuryoku {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+  }
+  .nyuuryoku input {
+    font-size: 16px;
+    padding: 8px;
+    width: 60%;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+  .nyuuryoku button {
+    font-size: 16px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    background: #333;
+    color: white;
+    margin-left: 6px;
+  }
 </style>
 </head>
 
@@ -56,41 +80,70 @@
 
 <script>
 // ------------------------------
-// データ（今はここに直接書いている）
+// データ
 // ------------------------------
 let kaiList = [
   {
     eventMei: "バンドイベント",
     hizuke: "2026-09-12",
     hitsuyouNinzuu: 5,
-    shutsuensha: ["山田", "佐藤"]
+    shutsuensha: ["山田", "佐藤"],
+    hiraiteru: false          // 入力欄が開いているかどうか
   },
   {
     eventMei: "DJイベント",
     hizuke: "2026-10-03",
     hitsuyouNinzuu: 4,
-    shutsuensha: ["田中", "鈴木", "高橋", "伊藤"]
+    shutsuensha: ["田中", "鈴木", "高橋", "伊藤"],
+    hiraiteru: false
   }
 ];
+
+
+// ------------------------------
+// 開く / 閉じるを切り替える
+// ------------------------------
+function kirikaeru(bangou) {
+  kaiList[bangou].hiraiteru = !kaiList[bangou].hiraiteru;
+  kakidasu();
+}
+
+
+// ------------------------------
+// 名前を1つ足す
+// ------------------------------
+function namaeWoTasu(bangou) {
+  // 入力欄を取ってくる
+  const ran = document.getElementById("namae-ran-" + bangou);
+  const namae = ran.value.trim();
+
+  // 空っぽなら何もしない
+  if (namae === "") {
+    return;
+  }
+
+  // リストに足す
+  kaiList[bangou].shutsuensha.push(namae);
+
+  // 画面を書き直す
+  kakidasu();
+}
 
 
 // ------------------------------
 // 画面に書き出す
 // ------------------------------
 function kakidasu() {
-  // 箱を取ってくる
   const basho = document.getElementById("ireru-basho");
-
-  // 中を一度からっぽにする
   basho.innerHTML = "";
 
-  // データを1件ずつ取り出して、箱に入れていく
-  for (const kai of kaiList) {
+  // 何番目かを数えながら、1件ずつ取り出す
+  for (let bangou = 0; bangou < kaiList.length; bangou++) {
+    const kai = kaiList[bangou];
 
     // あと何人か計算する
     const nokori = kai.hitsuyouNinzuu - kai.shutsuensha.length;
 
-    // 表示する文字を決める
     let nokoriMoji;
     if (nokori > 0) {
       nokoriMoji = "あと " + nokori + " 人";
@@ -98,20 +151,32 @@ function kakidasu() {
       nokoriMoji = "そろった";
     }
 
+    // 入力欄の部分を作る（開いているときだけ中身を入れる）
+    let nyuuryokuBubun = "";
+    if (kai.hiraiteru) {
+      nyuuryokuBubun =
+        '<div class="nyuuryoku">' +
+          '<input id="namae-ran-' + bangou + '" placeholder="名前">' +
+          '<button onclick="namaeWoTasu(' + bangou + ')">追加</button>' +
+        '</div>';
+    }
+
     // 1件分のカードを作る
     const card = document.createElement("div");
     card.className = "kai";
 
     card.innerHTML =
-      '<div class="event-mei">' + kai.eventMei + '</div>' +
-      '<div class="hizuke">' + kai.hizuke + '</div>' +
-      '<div class="nokori ' + (nokori > 0 ? '' : 'ok') + '">' + nokoriMoji + '</div>' +
-      '<div class="namae-list">' +
-        '出演決定 ' + kai.shutsuensha.length + ' / ' + kai.hitsuyouNinzuu + ' 人<br>' +
-        kai.shutsuensha.join("、") +
-      '</div>';
+      '<div class="kai-atama" onclick="kirikaeru(' + bangou + ')">' +
+        '<div class="event-mei">' + kai.eventMei + '</div>' +
+        '<div class="hizuke">' + kai.hizuke + '</div>' +
+        '<div class="nokori ' + (nokori > 0 ? '' : 'ok') + '">' + nokoriMoji + '</div>' +
+        '<div class="namae-list">' +
+          '出演決定 ' + kai.shutsuensha.length + ' / ' + kai.hitsuyouNinzuu + ' 人<br>' +
+          kai.shutsuensha.join("、") +
+        '</div>' +
+      '</div>' +
+      nyuuryokuBubun;
 
-    // 箱に入れる
     basho.appendChild(card);
   }
 }
