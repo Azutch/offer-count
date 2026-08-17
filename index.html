@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>オファー人数</title>
+
+<style>
+  body {
+    font-family: sans-serif;
+    background: #f4f4f6;
+    margin: 0;
+    padding: 16px;
+  }
+  h1 {
+    font-size: 20px;
+  }
+  .kai {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .event-mei {
+    font-size: 13px;
+    color: #888;
+  }
+  .hizuke {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 4px 0;
+  }
+  .nokori {
+    font-size: 22px;
+    font-weight: bold;
+    color: #d33;
+    margin: 8px 0;
+  }
+  .nokori.ok {
+    color: #2a2;
+  }
+  .namae-list {
+    font-size: 14px;
+    color: #555;
+  }
+</style>
+</head>
+
+<body>
+
+<h1>オファー人数</h1>
+
+<!-- ここが空っぽの箱。この中に回が書き出される -->
+<div id="ireru-basho"></div>
+
+
+<script>
+// ------------------------------
+// データ（今はここに直接書いている）
+// ------------------------------
+let kaiList = [
+  {
+    eventMei: "バンドイベント",
+    hizuke: "2026-09-12",
+    hitsuyouNinzuu: 5,
+    shutsuensha: ["山田", "佐藤"]
+  },
+  {
+    eventMei: "DJイベント",
+    hizuke: "2026-10-03",
+    hitsuyouNinzuu: 4,
+    shutsuensha: ["田中", "鈴木", "高橋", "伊藤"]
+  }
+];
+
+
+// ------------------------------
+// 画面に書き出す
+// ------------------------------
+function kakidasu() {
+  // 箱を取ってくる
+  const basho = document.getElementById("ireru-basho");
+
+  // 中を一度からっぽにする
+  basho.innerHTML = "";
+
+  // データを1件ずつ取り出して、箱に入れていく
+  for (const kai of kaiList) {
+
+    // あと何人か計算する
+    const nokori = kai.hitsuyouNinzuu - kai.shutsuensha.length;
+
+    // 表示する文字を決める
+    let nokoriMoji;
+    if (nokori > 0) {
+      nokoriMoji = "あと " + nokori + " 人";
+    } else {
+      nokoriMoji = "そろった";
+    }
+
+    // 1件分のカードを作る
+    const card = document.createElement("div");
+    card.className = "kai";
+
+    card.innerHTML =
+      '<div class="event-mei">' + kai.eventMei + '</div>' +
+      '<div class="hizuke">' + kai.hizuke + '</div>' +
+      '<div class="nokori ' + (nokori > 0 ? '' : 'ok') + '">' + nokoriMoji + '</div>' +
+      '<div class="namae-list">' +
+        '出演決定 ' + kai.shutsuensha.length + ' / ' + kai.hitsuyouNinzuu + ' 人<br>' +
+        kai.shutsuensha.join("、") +
+      '</div>';
+
+    // 箱に入れる
+    basho.appendChild(card);
+  }
+}
+
+// 起動したら書き出す
+kakidasu();
+</script>
+
+</body>
+</html>
