@@ -67,6 +67,12 @@
     color: white;
     margin-left: 6px;
   }
+  .kesu-btn {
+    background: #c33;
+    margin-top: 10px;
+    margin-left: 0;
+    display: block;
+  }
   #joutai {
     font-size: 13px;
     color: #888;
@@ -221,7 +227,6 @@ function kaiWoTasu() {
   const hizuke = document.getElementById("shin-hizuke").value;
   const ninzuu = Number(document.getElementById("shin-ninzuu").value);
 
-  // 日付が空っぽなら何もしない
   if (hizuke === "") {
     return;
   }
@@ -234,8 +239,26 @@ function kaiWoTasu() {
     hiraiteru: false
   });
 
-  // フォームを閉じる
   formKirikae();
+
+  kakidasu();
+  hozon();
+}
+
+
+// ------------------------------
+// 回を1つ消す
+// ------------------------------
+function kaiWoKesu(bangou) {
+  const kai = kaiList[bangou];
+
+  const kotae = confirm(kai.eventMei + " " + kai.hizuke + " を削除しますか？");
+
+  if (kotae === false) {
+    return;
+  }
+
+  kaiList.splice(bangou, 1);
 
   kakidasu();
   hozon();
@@ -294,6 +317,7 @@ function kakidasu() {
         '<div class="nyuuryoku">' +
           '<input id="namae-ran-' + bangou + '" placeholder="名前">' +
           '<button onclick="namaeWoTasu(' + bangou + ')">追加</button>' +
+          '<button class="kesu-btn" onclick="kaiWoKesu(' + bangou + ')">この回を削除</button>' +
         '</div>';
     }
 
