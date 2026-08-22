@@ -25,4 +25,16 @@ export async function onRequestGet(context) {
     data = JSON.parse(hairetteta);
   }
 
-  return new Response(JSON.st
+  return new Response(JSON.stringify(data), {
+    headers: { "Content-Type": "application/json" }
+  });
+}
+
+export async function onRequestPost(context) {
+  const okuraretaMono = await context.request.text();
+  await context.env.OFFER_KV.put(KAGI, okuraretaMono);
+
+  return new Response(JSON.stringify({ kekka: "ok" }), {
+    headers: { "Content-Type": "application/json" }
+  });
+}
