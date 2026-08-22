@@ -35,6 +35,6 @@ export async function onRequestPost(context) {
   await context.env.OFFER_KV.put(KAGI, okuraretaMono);
 
   return new Response(JSON.stringify({ kekka: "ok" }), {
-    headers: { "Content-Type": "application/json" }
-  });
+    headers: { "Content-Type": "application/json; charset=utf-8"
+
 }
