@@ -42,25 +42,46 @@
   .nokori.ok {
     color: #2a2;
   }
-  .namae-list {
+  .goukei {
     font-size: 14px;
     color: #555;
   }
-  .nyuuryoku {
+
+  /* 開いたときの中身 */
+  .naka {
     margin-top: 12px;
     padding-top: 12px;
     border-top: 1px solid #eee;
   }
-  .nyuuryoku input {
+
+  /* バンド1つ分 */
+  .band {
+    background: #f7f7f9;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .band-mei {
+    font-size: 15px;
+    font-weight: bold;
+  }
+  .member-list {
+    font-size: 14px;
+    color: #555;
+    margin: 4px 0 8px 0;
+  }
+
+  /* 入力欄まわり */
+  .ran {
     font-size: 16px;
     padding: 8px;
-    width: 60%;
+    width: 55%;
     border: 1px solid #ccc;
     border-radius: 6px;
   }
-  .nyuuryoku button {
-    font-size: 16px;
-    padding: 8px 16px;
+  .btn {
+    font-size: 15px;
+    padding: 8px 14px;
     border: none;
     border-radius: 6px;
     background: #333;
@@ -69,10 +90,11 @@
   }
   .kesu-btn {
     background: #c33;
-    margin-top: 10px;
+    margin-top: 12px;
     margin-left: 0;
     display: block;
   }
+
   #joutai {
     font-size: 13px;
     color: #888;
@@ -131,13 +153,11 @@
 
 <div id="joutai">読み込み中...</div>
 
-<!-- 回を追加するボタン -->
 <button id="tsuika-btn" onclick="formKirikae()">＋ 回を追加</button>
 
-<!-- 回を追加する入力欄（最初は隠れている） -->
 <div id="tsuika-form" style="display: none;">
   <label>イベント</label>
-  <select id="shin-event">
+  <select id="shin-event" onchange="ninzuuJidou()">
     <option>キャンユニ</option>
     <option>新宿事変</option>
     <option>#けーおんぶ</option>
@@ -147,23 +167,39 @@
   <input id="shin-hizuke" type="date">
 
   <label>必要人数</label>
-  <input id="shin-ninzuu" type="number" value="5">
+  <input id="shin-ninzuu" type="number" value="32">
 
   <button onclick="kaiWoTasu()">この回を追加する</button>
 </div>
 
-<!-- ここが空っぽの箱。この中に回が書き出される -->
 <div id="ireru-basho"></div>
 
 
 <script>
 // ------------------------------
-// データ（最初は空。受付からもらう）
+// イベントごとの決まった人数（テンプレート）
+// ------------------------------
+const KIMATTA_NINZUU = {
+  "キャンユニ": 32,
+  "新宿事変": 32,
+  "#けーおんぶ": 8
+};
+
+
+// ------------------------------
+// データ
 // ------------------------------
 let kaiList = [];
-
-// 追加フォームが開いているかどうか
 let formHiraiteru = false;
+
+
+// ------------------------------
+// イベントを選んだら、人数を自動で入れる
+// ------------------------------
+function ninzuuJidou() {
+  const eventMei = document.getElementById("shin-event").value;
+  document.getElementById("shin-ninzuu").value = KIMATTA_NINZUU[eventMei];
+}
 
 
 // ------------------------------
@@ -193,7 +229,7 @@ function hozon() {
       eventMei: kai.eventMei,
       hizuke: kai.hizuke,
       hitsuyouNinzuu: kai.hitsuyouNinzuu,
-      shutsuensha: kai.shutsuensha
+      bandList: kai.bandList
     };
   });
 
@@ -201,6 +237,20 @@ function hozon() {
     method: "POST",
     body: JSON.stringify(okuruMono)
   });
+}
+
+
+// ------------------------------
+// この回の、出演者の合計を数える
+// ------------------------------
+function goukeiWoKazoeru(kai) {
+  let goukei = 0;
+
+  for (const band of kai.bandList) {
+    goukei = goukei + band.memberList.length;
+  }
+
+  return goukei;
 }
 
 
@@ -235,7 +285,7 @@ function kaiWoTasu() {
     eventMei: eventMei,
     hizuke: hizuke,
     hitsuyouNinzuu: ninzuu,
-    shutsuensha: [],
+    bandList: [],
     hiraiteru: false
   });
 
@@ -249,8 +299,8 @@ function kaiWoTasu() {
 // ------------------------------
 // 回を1つ消す
 // ------------------------------
-function kaiWoKesu(bangou) {
-  const kai = kaiList[bangou];
+function kaiWoKesu(kaiBangou) {
+  const kai = kaiList[kaiBangou];
 
   const kotae = confirm(kai.eventMei + " " + kai.hizuke + " を削除しますか？");
 
@@ -258,7 +308,7 @@ function kaiWoKesu(bangou) {
     return;
   }
 
-  kaiList.splice(bangou, 1);
+  kaiList.splice(kaiBangou, 1);
 
   kakidasu();
   hozon();
@@ -266,29 +316,50 @@ function kaiWoKesu(bangou) {
 
 
 // ------------------------------
-// 開く / 閉じるを切り替える
+// バンドを1つ足す
 // ------------------------------
-function kirikaeru(bangou) {
-  kaiList[bangou].hiraiteru = !kaiList[bangou].hiraiteru;
+function bandWoTasu(kaiBangou) {
+  const ran = document.getElementById("band-ran-" + kaiBangou);
+  const bandMei = ran.value.trim();
+
+  if (bandMei === "") {
+    return;
+  }
+
+  kaiList[kaiBangou].bandList.push({
+    bandMei: bandMei,
+    memberList: []
+  });
+
   kakidasu();
+  hozon();
 }
 
 
 // ------------------------------
-// 名前を1つ足す
+// メンバーを1人足す
 // ------------------------------
-function namaeWoTasu(bangou) {
-  const ran = document.getElementById("namae-ran-" + bangou);
+function memberWoTasu(kaiBangou, bandBangou) {
+  const ran = document.getElementById("member-ran-" + kaiBangou + "-" + bandBangou);
   const namae = ran.value.trim();
 
   if (namae === "") {
     return;
   }
 
-  kaiList[bangou].shutsuensha.push(namae);
+  kaiList[kaiBangou].bandList[bandBangou].memberList.push(namae);
 
   kakidasu();
   hozon();
+}
+
+
+// ------------------------------
+// カードを開く / 閉じる
+// ------------------------------
+function kirikaeru(kaiBangou) {
+  kaiList[kaiBangou].hiraiteru = !kaiList[kaiBangou].hiraiteru;
+  kakidasu();
 }
 
 
@@ -299,10 +370,11 @@ function kakidasu() {
   const basho = document.getElementById("ireru-basho");
   basho.innerHTML = "";
 
-  for (let bangou = 0; bangou < kaiList.length; bangou++) {
-    const kai = kaiList[bangou];
+  for (let kaiBangou = 0; kaiBangou < kaiList.length; kaiBangou++) {
+    const kai = kaiList[kaiBangou];
 
-    const nokori = kai.hitsuyouNinzuu - kai.shutsuensha.length;
+    const goukei = goukeiWoKazoeru(kai);
+    const nokori = kai.hitsuyouNinzuu - goukei;
 
     let nokoriMoji;
     if (nokori > 0) {
@@ -311,36 +383,51 @@ function kakidasu() {
       nokoriMoji = "そろった";
     }
 
-    let nyuuryokuBubun = "";
+    // --- 開いたときの中身を組み立てる ---
+    let nakaBubun = "";
+
     if (kai.hiraiteru) {
-      nyuuryokuBubun =
-        '<div class="nyuuryoku">' +
-          '<input id="namae-ran-' + bangou + '" placeholder="名前">' +
-          '<button onclick="namaeWoTasu(' + bangou + ')">追加</button>' +
-          '<button class="kesu-btn" onclick="kaiWoKesu(' + bangou + ')">この回を削除</button>' +
+      let bandBubun = "";
+
+      // バンドを1つずつ書き出す
+      for (let bandBangou = 0; bandBangou < kai.bandList.length; bandBangou++) {
+        const band = kai.bandList[bandBangou];
+
+        bandBubun = bandBubun +
+          '<div class="band">' +
+            '<div class="band-mei">' + band.bandMei + ' (' + band.memberList.length + '人)</div>' +
+            '<div class="member-list">' + band.memberList.join("、") + '</div>' +
+            '<input class="ran" id="member-ran-' + kaiBangou + '-' + bandBangou + '" placeholder="メンバー名">' +
+            '<button class="btn" onclick="memberWoTasu(' + kaiBangou + ',' + bandBangou + ')">追加</button>' +
+          '</div>';
+      }
+
+      nakaBubun =
+        '<div class="naka">' +
+          bandBubun +
+          '<input class="ran" id="band-ran-' + kaiBangou + '" placeholder="バンド名">' +
+          '<button class="btn" onclick="bandWoTasu(' + kaiBangou + ')">バンドを追加</button>' +
+          '<button class="btn kesu-btn" onclick="kaiWoKesu(' + kaiBangou + ')">この回を削除</button>' +
         '</div>';
     }
 
+    // --- カードを作る ---
     const card = document.createElement("div");
     card.className = "kai";
 
     card.innerHTML =
-      '<div class="kai-atama" onclick="kirikaeru(' + bangou + ')">' +
+      '<div class="kai-atama" onclick="kirikaeru(' + kaiBangou + ')">' +
         '<div class="event-mei">' + kai.eventMei + '</div>' +
         '<div class="hizuke">' + kai.hizuke + '</div>' +
         '<div class="nokori ' + (nokori > 0 ? '' : 'ok') + '">' + nokoriMoji + '</div>' +
-        '<div class="namae-list">' +
-          '出演決定 ' + kai.shutsuensha.length + ' / ' + kai.hitsuyouNinzuu + ' 人<br>' +
-          kai.shutsuensha.join("、") +
-        '</div>' +
+        '<div class="goukei">出演決定 ' + goukei + ' / ' + kai.hitsuyouNinzuu + ' 人</div>' +
       '</div>' +
-      nyuuryokuBubun;
+      nakaBubun;
 
     basho.appendChild(card);
   }
 }
 
-// 起動したら、まず読み込む
 yomikomu();
 </script>
 
