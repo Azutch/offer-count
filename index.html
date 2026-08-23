@@ -36,10 +36,15 @@
   .nokori {
     font-size: 22px;
     font-weight: bold;
-    color: #d33;
     margin: 8px 0;
   }
-  .nokori.ok {
+  .nokori.aka {
+    color: #d33;
+  }
+  .nokori.kiiro {
+    color: #c90;
+  }
+  .nokori.midori {
     color: #2a2;
   }
   .goukei {
@@ -255,6 +260,29 @@ function goukeiWoKazoeru(kai) {
 
 
 // ------------------------------
+// 色を決める
+// ------------------------------
+function iroWoKimeru(kai, goukei) {
+  // #けーおんぶ だけ、3段階
+  if (kai.eventMei === "#けーおんぶ") {
+    if (goukei >= kai.hitsuyouNinzuu) {
+      return "midori";
+    }
+    if (goukei > 5) {
+      return "kiiro";
+    }
+    return "aka";
+  }
+
+  // それ以外は、2段階
+  if (goukei >= kai.hitsuyouNinzuu) {
+    return "midori";
+  }
+  return "aka";
+}
+
+
+// ------------------------------
 // 追加フォームを開く / 閉じる
 // ------------------------------
 function formKirikae() {
@@ -383,13 +411,14 @@ function kakidasu() {
       nokoriMoji = "そろった";
     }
 
+    const iro = iroWoKimeru(kai, goukei);
+
     // --- 開いたときの中身を組み立てる ---
     let nakaBubun = "";
 
     if (kai.hiraiteru) {
       let bandBubun = "";
 
-      // バンドを1つずつ書き出す
       for (let bandBangou = 0; bandBangou < kai.bandList.length; bandBangou++) {
         const band = kai.bandList[bandBangou];
 
@@ -419,7 +448,7 @@ function kakidasu() {
       '<div class="kai-atama" onclick="kirikaeru(' + kaiBangou + ')">' +
         '<div class="event-mei">' + kai.eventMei + '</div>' +
         '<div class="hizuke">' + kai.hizuke + '</div>' +
-        '<div class="nokori ' + (nokori > 0 ? '' : 'ok') + '">' + nokoriMoji + '</div>' +
+        '<div class="nokori ' + iro + '">' + nokoriMoji + '</div>' +
         '<div class="goukei">出演決定 ' + goukei + ' / ' + kai.hitsuyouNinzuu + ' 人</div>' +
       '</div>' +
       nakaBubun;
