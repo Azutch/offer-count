@@ -66,7 +66,6 @@
     color: #444;
     margin: 16px 0 8px 0;
   }
-  /* 押せる見出し（声掛け中・声掛け予定） */
   .waku-midashi.oseru {
     background: #eeeef1;
     border-radius: 8px;
@@ -84,6 +83,17 @@
   .band-mei {
     font-size: 15px;
     font-weight: bold;
+    cursor: pointer;
+  }
+  /* バンド名を編集中の入力欄 */
+  .band-mei-ran {
+    font-size: 15px;
+    font-weight: bold;
+    padding: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    border: 2px solid #333;
+    border-radius: 6px;
   }
 
   /* メンバー1人分の行 */
@@ -119,7 +129,6 @@
     box-sizing: border-box;
   }
 
-  /* バンドを削除するボタン */
   .band-kesu-btn {
     font-size: 14px;
     padding: 6px 12px;
@@ -296,6 +305,7 @@ async function yomikomu() {
   for (const kai of data) {
     kai.hiraiteru = false;
     kai.hiraitaWaku = "";
+    kai.henshuuChuu = -1;
   }
 
   kaiList = data;
@@ -411,7 +421,8 @@ function kaiWoTasu() {
     hitsuyouNinzuu: ninzuu,
     bandList: [],
     hiraiteru: false,
-    hiraitaWaku: ""
+    hiraitaWaku: "",
+    henshuuChuu: -1
   });
 
   formKirikae();
@@ -460,7 +471,6 @@ function bandWoTasu(kaiBangou) {
     memberList: []
   });
 
-  // 追加した枠を開いておく（出演決定はもともと開いている）
   if (waku !== "kettei") {
     kaiList[kaiBangou].hiraitaWaku = waku;
   }
@@ -483,6 +493,41 @@ function bandWoKesu(kaiBangou, bandBangou) {
   }
 
   kaiList[kaiBangou].bandList.splice(bandBangou, 1);
+  kaiList[kaiBangou].henshuuChuu = -1;
+
+  kakidasu();
+  hozon();
+}
+
+
+// ------------------------------
+// バンド名の編集を始める
+// ------------------------------
+function bandMeiHenshuuKaishi(kaiBangou, bandBangou) {
+  kaiList[kaiBangou].henshuuChuu = bandBangou;
+  kakidasu();
+
+  // 入力欄にカーソルを入れて、文字を選んだ状態にする
+  const ran = document.getElementById("bandmei-ran-" + kaiBangou + "-" + bandBangou);
+  if (ran) {
+    ran.focus();
+    ran.select();
+  }
+}
+
+
+// ------------------------------
+// バンド名の編集を終える（入力欄から離れたとき）
+// ------------------------------
+function bandMeiHenshuuOwari(kaiBangou, bandBangou, atarashiiMei) {
+  const namae = atarashiiMei.trim();
+
+  // 空っぽでなければ、書き換える
+  if (namae !== "") {
+    kaiList[kaiBangou].bandList[bandBangou].bandMei = namae;
+  }
+
+  kaiList[kaiBangou].henshuuChuu = -1;
 
   kakidasu();
   hozon();
@@ -539,17 +584,14 @@ function kirikaeru(kaiBangou) {
 
 
 // ------------------------------
-// 枠を開く / 閉じる
-// （同時に開けるのは1つだけ）
+// 枠を開く / 閉じる（同時に開けるのは1つだけ）
 // ------------------------------
 function wakuWoHiraku(kaiBangou, wakuId) {
   const kai = kaiList[kaiBangou];
 
   if (kai.hiraitaWaku === wakuId) {
-    // すでに開いているものを押した → 閉じる
     kai.hiraitaWaku = "";
   } else {
-    // 別のものを押した → そっちを開く（前のは自動で閉じる）
     kai.hiraitaWaku = wakuId;
   }
 
@@ -560,7 +602,24 @@ function wakuWoHiraku(kaiBangou, wakuId) {
 // ------------------------------
 // バンド1つ分の見た目を作る
 // ------------------------------
-function bandNoMitame(kaiBangou, bandBangou, band) {
+function bandNoMitame(kaiBangou, bandBangou, band, henshuuChuu) {
+
+  // --- バンド名の部分（編集中かどうかで変わる） ---
+  let bandMeiBubun;
+
+  if (henshuuChuu === bandBangou) {
+    // 編集中 → 入力欄
+    bandMeiBubun =
+      '<input class="band-mei-ran" id="bandmei-ran-' + kaiBangou + '-' + bandBangou + '"' +
+        ' value="' + band.bandMei + '"' +
+        ' onblur="bandMeiHenshuuOwari(' + kaiBangou + ',' + bandBangou + ', this.value)">';
+  } else {
+    // 普段 → 押せる文字
+    bandMeiBubun =
+      '<div class="band-mei" onclick="bandMeiHenshuuKaishi(' + kaiBangou + ',' + bandBangou + ')">' +
+        band.bandMei + ' (' + band.memberList.length + '人)' +
+      '</div>';
+  }
 
   // --- メンバーを1人ずつ縦に並べる ---
   let memberBubun = "";
@@ -592,7 +651,7 @@ function bandNoMitame(kaiBangou, bandBangou, band) {
 
   // --- 組み立てる ---
   return '<div class="band">' +
-      '<div class="band-mei">' + band.bandMei + ' (' + band.memberList.length + '人)</div>' +
+      bandMeiBubun +
       memberBubun +
       '<div style="margin-top:8px;">' +
         '<input class="ran" id="member-ran-' + kaiBangou + '-' + bandBangou + '" placeholder="メンバー名">' +
@@ -636,19 +695,16 @@ function kakidasu() {
         const atsumeta = wakuNoBand(kai, waku.id);
         const ninzuu = wakuNoNinzuu(kai, waku.id);
 
-        // この枠の中身を出すかどうかを決める
         let dasu;
         let midashi;
 
         if (waku.id === "kettei") {
-          // 出演決定は、いつも開いている。押せない
           dasu = true;
           midashi =
             '<div class="waku-midashi">' +
               waku.mei + '　' + atsumeta.length + 'バンド ' + ninzuu + '名' +
             '</div>';
         } else {
-          // 声掛け中・声掛け予定は、押して開く
           dasu = (kai.hiraitaWaku === waku.id);
 
           let yajirushi;
@@ -666,10 +722,9 @@ function kakidasu() {
 
         wakuBubun = wakuBubun + midashi;
 
-        // 開いているときだけ、バンドを書き出す
         if (dasu) {
           for (const kumi of atsumeta) {
-            wakuBubun = wakuBubun + bandNoMitame(kaiBangou, kumi.bangou, kumi.band);
+            wakuBubun = wakuBubun + bandNoMitame(kaiBangou, kumi.bangou, kumi.band, kai.henshuuChuu);
           }
         }
       }
