@@ -66,6 +66,13 @@
     color: #444;
     margin: 16px 0 8px 0;
   }
+  /* 押せる見出し（声掛け中・声掛け予定） */
+  .waku-midashi.oseru {
+    background: #eeeef1;
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+  }
 
   /* バンド1つ分 */
   .band {
@@ -288,6 +295,7 @@ async function yomikomu() {
 
   for (const kai of data) {
     kai.hiraiteru = false;
+    kai.hiraitaWaku = "";
   }
 
   kaiList = data;
@@ -402,7 +410,8 @@ function kaiWoTasu() {
     hizuke: hizuke,
     hitsuyouNinzuu: ninzuu,
     bandList: [],
-    hiraiteru: false
+    hiraiteru: false,
+    hiraitaWaku: ""
   });
 
   formKirikae();
@@ -450,6 +459,11 @@ function bandWoTasu(kaiBangou) {
     waku: waku,
     memberList: []
   });
+
+  // 追加した枠を開いておく（出演決定はもともと開いている）
+  if (waku !== "kettei") {
+    kaiList[kaiBangou].hiraitaWaku = waku;
+  }
 
   kakidasu();
   hozon();
@@ -520,6 +534,25 @@ function memberWoKesu(kaiBangou, bandBangou, memberBangou) {
 // ------------------------------
 function kirikaeru(kaiBangou) {
   kaiList[kaiBangou].hiraiteru = !kaiList[kaiBangou].hiraiteru;
+  kakidasu();
+}
+
+
+// ------------------------------
+// 枠を開く / 閉じる
+// （同時に開けるのは1つだけ）
+// ------------------------------
+function wakuWoHiraku(kaiBangou, wakuId) {
+  const kai = kaiList[kaiBangou];
+
+  if (kai.hiraitaWaku === wakuId) {
+    // すでに開いているものを押した → 閉じる
+    kai.hiraitaWaku = "";
+  } else {
+    // 別のものを押した → そっちを開く（前のは自動で閉じる）
+    kai.hiraitaWaku = wakuId;
+  }
+
   kakidasu();
 }
 
@@ -603,13 +636,41 @@ function kakidasu() {
         const atsumeta = wakuNoBand(kai, waku.id);
         const ninzuu = wakuNoNinzuu(kai, waku.id);
 
-        wakuBubun = wakuBubun +
-          '<div class="waku-midashi">' +
-            waku.mei + '　' + atsumeta.length + 'バンド ' + ninzuu + '名' +
-          '</div>';
+        // この枠の中身を出すかどうかを決める
+        let dasu;
+        let midashi;
 
-        for (const kumi of atsumeta) {
-          wakuBubun = wakuBubun + bandNoMitame(kaiBangou, kumi.bangou, kumi.band);
+        if (waku.id === "kettei") {
+          // 出演決定は、いつも開いている。押せない
+          dasu = true;
+          midashi =
+            '<div class="waku-midashi">' +
+              waku.mei + '　' + atsumeta.length + 'バンド ' + ninzuu + '名' +
+            '</div>';
+        } else {
+          // 声掛け中・声掛け予定は、押して開く
+          dasu = (kai.hiraitaWaku === waku.id);
+
+          let yajirushi;
+          if (dasu) {
+            yajirushi = "▼";
+          } else {
+            yajirushi = "▶";
+          }
+
+          midashi =
+            '<div class="waku-midashi oseru" onclick="wakuWoHiraku(' + kaiBangou + ', \'' + waku.id + '\')">' +
+              yajirushi + ' ' + waku.mei + '　' + atsumeta.length + 'バンド ' + ninzuu + '名' +
+            '</div>';
+        }
+
+        wakuBubun = wakuBubun + midashi;
+
+        // 開いているときだけ、バンドを書き出す
+        if (dasu) {
+          for (const kumi of atsumeta) {
+            wakuBubun = wakuBubun + bandNoMitame(kaiBangou, kumi.bangou, kumi.band);
+          }
         }
       }
 
