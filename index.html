@@ -429,6 +429,100 @@
     width: 100%;
   }
 
+  /* セット表 */
+  #sethyou-gazou {
+    width: 100%;
+    border-radius: 8px;
+    background: white;
+    display: block;
+  }
+  .sethyou-botan {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .sethyou-botan button {
+    flex: 1;
+    font-size: 15px;
+    padding: 12px 8px;
+    border: none;
+    border-radius: 8px;
+    background: #6a5acd;
+    color: white;
+  }
+  .sethyou-memo {
+    font-size: 12px;
+    color: #8a8a94;
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+  .file-ran {
+    font-size: 14px;
+    color: #c8c8d0;
+    margin-bottom: 8px;
+  }
+
+  /* アーカイブ */
+  .archive-gyou {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #2e2e36;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+  .archive-mei {
+    font-size: 15px;
+    color: #f2f2f4;
+  }
+  .archive-sub {
+    font-size: 12px;
+    color: #8a8a94;
+  }
+  .archive-botan {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .archive-botan button {
+    font-size: 13px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    background: #4d4d5c;
+    color: white;
+  }
+
+  /* アーカイブの中身（見るだけ） */
+  .miru-midashi {
+    font-size: 14px;
+    font-weight: bold;
+    color: #c8c8d0;
+    margin: 14px 0 6px 0;
+  }
+  .miru-band {
+    font-size: 14px;
+    color: #f2f2f4;
+    margin-top: 8px;
+  }
+  .miru-member {
+    font-size: 13px;
+    color: #a8a8b2;
+    padding-left: 12px;
+  }
+  .modoru-btn {
+    font-size: 15px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    background: #4d4d5c;
+    color: white;
+    width: 100%;
+    margin-top: 16px;
+  }
+
   /* 4つのボタン（2×2） */
   #dougu {
     display: grid;
@@ -866,8 +960,160 @@ function shuffleBand() {
   // ここに、これから中身を作る
 }
 
-function setHyou() {
-  // ここに、これから中身を作る
+// ==============================
+// セット表
+// ==============================
+
+// 画像そのもの（文字に変換された形で持つ）
+let sethyouGazou = "";
+
+
+// 受付から、画像をもらってくる
+async function sethyouWoYomu() {
+  const henji = await fetch("/sethyou");
+  const data = await henji.json();
+
+  sethyouGazou = data.gazou;
+}
+
+
+// 受付に、画像を預ける
+function sethyouWoHozon() {
+  fetch("/sethyou", {
+    method: "POST",
+    body: sethyouGazou
+  });
+}
+
+
+// セット表を開く
+async function setHyou() {
+  // まだ読み込んでいなければ、ここで読み込む
+  if (sethyouGazou === "") {
+    popupWoHiraku("セット表", '<div class="link-nashi">読み込み中...</div>');
+    await sethyouWoYomu();
+  }
+
+  if (sethyouGazou === "") {
+    popupWoHiraku("セット表",
+      '<div class="link-nashi">まだ登録されていません。<br>⚙️ から登録できます。</div>');
+    return;
+  }
+
+  const nakami =
+    '<img id="sethyou-gazou" src="' + sethyouGazou + '" alt="セット表">' +
+    '<div class="sethyou-botan">' +
+      '<button onclick="sethyouWoDownload()">保存</button>' +
+      '<button onclick="sethyouWoShare()">共有</button>' +
+    '</div>' +
+    '<div class="sethyou-memo">' +
+      '保存がうまくいかないときは、画像を長押しして「写真に保存」もできます。' +
+    '</div>';
+
+  popupWoHiraku("セット表", nakami);
+}
+
+
+// 端末に保存する
+function sethyouWoDownload() {
+  const a = document.createElement("a");
+  a.href = sethyouGazou;
+  a.download = "sethyou.jpg";
+
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+
+// 共有する（LINEなどに送る）
+async function sethyouWoShare() {
+  try {
+    const henji = await fetch(sethyouGazou);
+    const blob = await henji.blob();
+
+    const file = new File([blob], "sethyou.jpg", { type: blob.type });
+
+    // この端末が「ファイルの共有」に対応しているか確かめる
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: "セット表" });
+      return;
+    }
+
+    alert("この端末では共有できませんでした。画像を長押しして保存してください。");
+
+  } catch (e) {
+    alert("共有できませんでした。画像を長押しして保存してください。");
+  }
+}
+
+
+// ------------------------------
+// 選んだ画像を、小さくしてから文字に変換する
+//   写真そのままだと大きすぎるので、
+//   横幅1800までに縮めて、軽くしてから預ける
+// ------------------------------
+function sethyouWoErabu(inputYouso) {
+  const file = inputYouso.files[0];
+
+  if (!file) {
+    return;
+  }
+
+  const yomitori = new FileReader();
+
+  yomitori.onload = function (e) {
+    const gazou = new Image();
+
+    gazou.onload = function () {
+      // 縮めたあとの大きさを決める
+      const saidaiHaba = 1800;
+
+      let haba = gazou.width;
+      let takasa = gazou.height;
+
+      if (haba > saidaiHaba) {
+        takasa = Math.round(takasa * (saidaiHaba / haba));
+        haba = saidaiHaba;
+      }
+
+      // 見えない画用紙を用意して、そこに縮めて描く
+      const canvas = document.createElement("canvas");
+      canvas.width = haba;
+      canvas.height = takasa;
+
+      const fude = canvas.getContext("2d");
+
+      // 白い紙の上に描く（透明な部分が黒くならないように）
+      fude.fillStyle = "#ffffff";
+      fude.fillRect(0, 0, haba, takasa);
+      fude.drawImage(gazou, 0, 0, haba, takasa);
+
+      // 文字に変換する
+      sethyouGazou = canvas.toDataURL("image/jpeg", 0.85);
+
+      sethyouWoHozon();
+      setteiWoHiraku();
+    };
+
+    gazou.src = e.target.result;
+  };
+
+  yomitori.readAsDataURL(file);
+}
+
+
+// セット表を消す
+function sethyouWoKesu() {
+  const kotae = confirm("セット表の画像を削除しますか？");
+
+  if (kotae === false) {
+    return;
+  }
+
+  sethyouGazou = "";
+  sethyouWoHozon();
+  setteiWoHiraku();
 }
 
 
@@ -902,7 +1148,164 @@ function setteiWoHiraku() {
       '<button onclick="linkWoTasu()">追加する</button>' +
     '</div>';
 
+  // --- セット表の画像 ---
+  let sethyouBubun = "";
+
+  if (sethyouGazou === "") {
+    sethyouBubun = '<div class="link-nashi">まだ登録されていません</div>';
+  } else {
+    sethyouBubun =
+      '<img id="sethyou-gazou" src="' + sethyouGazou + '" alt="セット表">' +
+      '<button class="modoru-btn" onclick="sethyouWoKesu()">この画像を削除</button>';
+  }
+
+  nakami = nakami +
+    '<div class="settei-tsuika">' +
+      '<div class="settei-midashi">セット表の画像</div>' +
+      sethyouBubun +
+      '<div class="file-ran" style="margin-top:12px;">' +
+        '<input type="file" accept="image/*" onchange="sethyouWoErabu(this)">' +
+      '</div>' +
+      '<div class="sethyou-memo">' +
+        '画像を選ぶと、自動で小さくしてから保存します。' +
+      '</div>' +
+    '</div>';
+
+  // --- アーカイブ ---
+  nakami = nakami +
+    '<div class="settei-tsuika">' +
+      '<div class="settei-midashi">アーカイブ</div>';
+
+  let archiveAru = false;
+
+  for (let kaiBangou = 0; kaiBangou < kaiList.length; kaiBangou++) {
+    const kai = kaiList[kaiBangou];
+
+    if (!waArchive(kai)) {
+      continue;
+    }
+
+    archiveAru = true;
+
+    // 出演決定の人数を出す
+    let ninzuu;
+    if (kai.eventMei === "#けーおんぶ") {
+      ninzuu = bumonWakuNoNinzuu(kai, "dj", "kettei") + bumonWakuNoNinzuu(kai, "vj", "kettei");
+    } else {
+      ninzuu = wakuNoNinzuu(kai, "kettei");
+    }
+
+    nakami = nakami +
+      '<div class="archive-gyou">' +
+        '<div>' +
+          '<div class="archive-mei">' + kai.eventMei + ' ' + hizukeWoMijikaku(kai.hizuke) + '</div>' +
+          '<div class="archive-sub">出演決定 ' + ninzuu + '人</div>' +
+        '</div>' +
+        '<div class="archive-botan">' +
+          '<button onclick="archiveWoMiru(' + kaiBangou + ')">見る</button>' +
+          '<button onclick="archiveKaraModosu(' + kaiBangou + ')">戻す</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  if (!archiveAru) {
+    nakami = nakami + '<div class="link-nashi">まだありません</div>';
+  }
+
+  nakami = nakami + '</div>';
+
   popupWoHiraku("設定", nakami);
+}
+
+
+// ------------------------------
+// アーカイブの中身を見る（見るだけ。直せない）
+// ------------------------------
+function archiveWoMiru(kaiBangou) {
+  const kai = kaiList[kaiBangou];
+
+  let nakami = "";
+
+  if (kai.eventMei === "#けーおんぶ") {
+    // DJ / VJ ごとに書き出す
+    for (const bumon of KEONBU_BUMON) {
+      nakami = nakami + '<div class="miru-midashi">' + bumon.mei + '</div>';
+
+      for (const waku of WAKU_LIST) {
+        const atsumeta = bumonWakuNoHito(kai, bumon.id, waku.id);
+
+        if (atsumeta.length === 0) {
+          continue;
+        }
+
+        let namaeList = [];
+        for (const kumi of atsumeta) {
+          namaeList.push(kumi.hito.namae);
+        }
+
+        nakami = nakami +
+          '<div class="miru-band">' + waku.mei + '（' + atsumeta.length + '名）</div>' +
+          '<div class="miru-member">' + namaeList.join("、") + '</div>';
+      }
+    }
+  } else {
+    // 枠ごとに、バンドとメンバーを書き出す
+    for (const waku of WAKU_LIST) {
+      const atsumeta = wakuNoBand(kai, waku.id);
+
+      if (atsumeta.length === 0) {
+        continue;
+      }
+
+      nakami = nakami +
+        '<div class="miru-midashi">' + waku.mei + '（' +
+          atsumeta.length + 'バンド ' + wakuNoNinzuu(kai, waku.id) + '名）</div>';
+
+      for (const kumi of atsumeta) {
+        const band = kumi.band;
+
+        let membersMoji = "（メンバーなし）";
+        if (band.memberList.length > 0) {
+          membersMoji = band.memberList.join("、");
+        }
+
+        nakami = nakami +
+          '<div class="miru-band">' + band.bandMei + '</div>' +
+          '<div class="miru-member">' + membersMoji + '</div>';
+      }
+    }
+  }
+
+  if (nakami === "") {
+    nakami = '<div class="link-nashi">中身がありません</div>';
+  }
+
+  nakami = nakami +
+    '<button class="modoru-btn" onclick="setteiWoHiraku()">設定に戻る</button>';
+
+  popupWoHiraku(kai.eventMei + " " + hizukeWoMijikaku(kai.hizuke), nakami);
+}
+
+
+// ------------------------------
+// アーカイブから、一覧に戻す
+// ------------------------------
+function archiveKaraModosu(kaiBangou) {
+  const kai = kaiList[kaiBangou];
+
+  const kotae = confirm(kai.eventMei + " " + hizukeWoMijikaku(kai.hizuke) + " を一覧に戻しますか？");
+
+  if (kotae === false) {
+    return;
+  }
+
+  oboeru();
+  kai.teDeModosita = true;
+
+  kakidasu();
+  hozon();
+
+  setteiWoHiraku();
 }
 
 
@@ -1004,6 +1407,9 @@ async function yomikomu() {
     if (!kai.taskDone) {
       kai.taskDone = {};
     }
+    if (kai.teDeModosita !== true) {
+      kai.teDeModosita = false;
+    }
   }
 
   kaiList = data;
@@ -1021,7 +1427,8 @@ function hozon() {
       hitsuyouNinzuu: kai.hitsuyouNinzuu,
       bandList: kai.bandList,
       hitoList: kai.hitoList,
-      taskDone: kai.taskDone
+      taskDone: kai.taskDone,
+      teDeModosita: kai.teDeModosita
     };
   });
 
@@ -1097,6 +1504,25 @@ function keonbuIroWoKimeru(bumon, ninzuu) {
     return "kiiro";
   }
   return "aka";
+}
+
+
+// ------------------------------
+// この回はアーカイブ行きか？
+//   イベントの日を過ぎたら（翌日から）アーカイブ
+//   手で戻したものは、ずっと一覧に残す
+// ------------------------------
+function waArchive(kai) {
+  if (kai.teDeModosita === true) {
+    return false;
+  }
+
+  const eventBi = new Date(kai.hizuke + "T00:00:00");
+
+  const kyou = new Date();
+  kyou.setHours(0, 0, 0, 0);
+
+  return eventBi.getTime() < kyou.getTime();
 }
 
 
@@ -1189,6 +1615,7 @@ function kaiWoTasu() {
     bandList: [],
     hitoList: [],
     taskDone: {},
+    teDeModosita: false,
     hiraiteru: false,
     hiraitaWaku: saishoNoWaku,
     hiraitaBand: -1,
@@ -1790,6 +2217,11 @@ function kakidasu() {
   for (let kaiBangou = 0; kaiBangou < kaiList.length; kaiBangou++) {
     const kai = kaiList[kaiBangou];
 
+    // アーカイブ行きのものは、一覧に出さない
+    if (waArchive(kai)) {
+      continue;
+    }
+
     const keonbu = (kai.eventMei === "#けーおんぶ");
 
     let atamaBubun;
@@ -1828,6 +2260,7 @@ function kakidasu() {
 // 起動したら、回のデータと設定の両方を読み込む
 yomikomu();
 setteiWoYomu();
+sethyouWoYomu();
 </script>
 
 </body>
