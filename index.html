@@ -38,28 +38,20 @@
     font-weight: bold;
     margin: 8px 0;
   }
-  .aka {
-    color: #d33;
-  }
-  .kiiro {
-    color: #c90;
-  }
-  .midori {
-    color: #2a2;
-  }
+  .aka { color: #d33; }
+  .kiiro { color: #c90; }
+  .midori { color: #2a2; }
   .goukei {
     font-size: 14px;
     color: #555;
   }
 
-  /* 開いたときの中身 */
   .naka {
     margin-top: 12px;
     padding-top: 12px;
     border-top: 1px solid #eee;
   }
 
-  /* 枠の見出し */
   .waku-midashi {
     font-size: 14px;
     font-weight: bold;
@@ -73,7 +65,6 @@
     cursor: pointer;
   }
 
-  /* DJ / VJ の大きい見出し */
   .bumon-midashi {
     font-size: 17px;
     font-weight: bold;
@@ -83,7 +74,6 @@
     border-bottom: 2px solid #333;
   }
 
-  /* バンド1つ分 */
   .band {
     background: #f7f7f9;
     border-radius: 8px;
@@ -94,6 +84,7 @@
     font-size: 15px;
     font-weight: bold;
     cursor: pointer;
+    user-select: none;
   }
   .band-mei-ran {
     font-size: 15px;
@@ -104,8 +95,12 @@
     border: 2px solid #333;
     border-radius: 6px;
   }
+  .band-naka {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e2e2e6;
+  }
 
-  /* 人ひとり分の行 */
   .member-gyou {
     font-size: 14px;
     color: #555;
@@ -148,7 +143,6 @@
     margin-top: 8px;
   }
 
-  /* 入力欄まわり */
   .ran {
     font-size: 16px;
     padding: 8px;
@@ -172,7 +166,6 @@
     display: block;
   }
 
-  /* 追加するところ */
   .band-tsuika {
     margin-top: 18px;
     padding-top: 14px;
@@ -206,7 +199,6 @@
     margin-bottom: 12px;
   }
 
-  /* 回を追加するところ */
   #tsuika-btn {
     font-size: 16px;
     padding: 10px 16px;
@@ -281,57 +273,38 @@
 
 
 <script>
-// ------------------------------
-// イベントごとの決まった人数（テンプレート）
-// ------------------------------
 const KIMATTA_NINZUU = {
   "キャンユニ": 32,
   "新宿事変": 32,
   "#けーおんぶ": 11
 };
 
-// ------------------------------
-// 3つの枠
-//   id  … データの中に保存される名札（変えない）
-//   mei … 画面に出る名前（ここを変えれば表示が変わる）
-// ------------------------------
 const WAKU_LIST = [
   { id: "kettei", mei: "出演決定" },
   { id: "chuu",   mei: "返答待ち" },
   { id: "yotei",  mei: "声掛け予定" }
 ];
 
-// ------------------------------
-// #けーおんぶ の DJ / VJ
-//   jougen     … 上限の人数
-//   kiiroKara  … 何人から黄色になるか
-//   midoriKara … 何人から緑になるか
-// ------------------------------
 const KEONBU_BUMON = [
   { id: "dj", mei: "DJ", jougen: 8, kiiroKara: 6, midoriKara: 8 },
   { id: "vj", mei: "VJ", jougen: 3, kiiroKara: 2, midoriKara: 3 }
 ];
 
 
-// ------------------------------
-// データ
-// ------------------------------
 let kaiList = [];
 let formHiraiteru = false;
 
+// 長押しを見張るための時計
+let nagaoshiTokei = null;
+let nagaoshiShita = false;
 
-// ------------------------------
-// イベントを選んだら、人数を自動で入れる
-// ------------------------------
+
 function ninzuuJidou() {
   const eventMei = document.getElementById("shin-event").value;
   document.getElementById("shin-ninzuu").value = KIMATTA_NINZUU[eventMei];
 }
 
 
-// ------------------------------
-// 受付から、データをもらってくる
-// ------------------------------
 async function yomikomu() {
   const henji = await fetch("/api");
   const data = await henji.json();
@@ -339,9 +312,9 @@ async function yomikomu() {
   for (const kai of data) {
     kai.hiraiteru = false;
     kai.hiraitaWaku = "";
+    kai.hiraitaBand = -1;
     kai.henshuuChuu = -1;
 
-    // 古いデータに入っていない項目を、空で用意しておく
     if (!kai.bandList) {
       kai.bandList = [];
     }
@@ -357,9 +330,6 @@ async function yomikomu() {
 }
 
 
-// ------------------------------
-// 受付に、データを預ける
-// ------------------------------
 function hozon() {
   const okuruMono = kaiList.map(function (kai) {
     return {
@@ -378,11 +348,6 @@ function hozon() {
 }
 
 
-// ==============================
-// ここから キャンユニ / 新宿事変 用
-// ==============================
-
-// ある枠のバンドだけを集める
 function wakuNoBand(kai, wakuId) {
   const atsumeta = [];
 
@@ -396,7 +361,6 @@ function wakuNoBand(kai, wakuId) {
 }
 
 
-// ある枠の、人数の合計を数える
 function wakuNoNinzuu(kai, wakuId) {
   let goukei = 0;
 
@@ -410,11 +374,6 @@ function wakuNoNinzuu(kai, wakuId) {
 }
 
 
-// ==============================
-// ここから #けーおんぶ 用
-// ==============================
-
-// DJ / VJ の上限を全部足す（= 11）
 function keonbuGoukeiJougen() {
   let goukei = 0;
 
@@ -426,7 +385,6 @@ function keonbuGoukeiJougen() {
 }
 
 
-// ある部門・ある枠の人だけを集める
 function bumonWakuNoHito(kai, bumonId, wakuId) {
   const atsumeta = [];
 
@@ -442,13 +400,11 @@ function bumonWakuNoHito(kai, bumonId, wakuId) {
 }
 
 
-// ある部門・ある枠の、人数を数える
 function bumonWakuNoNinzuu(kai, bumonId, wakuId) {
   return bumonWakuNoHito(kai, bumonId, wakuId).length;
 }
 
 
-// #けーおんぶ の色を決める
 function keonbuIroWoKimeru(bumon, ninzuu) {
   if (ninzuu >= bumon.midoriKara) {
     return "midori";
@@ -460,11 +416,6 @@ function keonbuIroWoKimeru(bumon, ninzuu) {
 }
 
 
-// ==============================
-// 共通
-// ==============================
-
-// 色を決める（キャンユニ / 新宿事変）
 function iroWoKimeru(kai, goukei) {
   if (goukei >= kai.hitsuyouNinzuu) {
     return "midori";
@@ -473,7 +424,6 @@ function iroWoKimeru(kai, goukei) {
 }
 
 
-// 追加フォームを開く / 閉じる
 function formKirikae() {
   formHiraiteru = !formHiraiteru;
 
@@ -486,7 +436,6 @@ function formKirikae() {
 }
 
 
-// 回を1つ足す
 function kaiWoTasu() {
   const eventMei = document.getElementById("shin-event").value;
   const hizuke = document.getElementById("shin-hizuke").value;
@@ -504,6 +453,7 @@ function kaiWoTasu() {
     hitoList: [],
     hiraiteru: false,
     hiraitaWaku: "",
+    hiraitaBand: -1,
     henshuuChuu: -1
   });
 
@@ -514,7 +464,6 @@ function kaiWoTasu() {
 }
 
 
-// 回を1つ消す
 function kaiWoKesu(kaiBangou) {
   const kai = kaiList[kaiBangou];
 
@@ -531,14 +480,12 @@ function kaiWoKesu(kaiBangou) {
 }
 
 
-// カードを開く / 閉じる
 function kirikaeru(kaiBangou) {
   kaiList[kaiBangou].hiraiteru = !kaiList[kaiBangou].hiraiteru;
   kakidasu();
 }
 
 
-// 枠を開く / 閉じる（同時に開けるのは1つだけ）
 function wakuWoHiraku(kaiBangou, kagi) {
   const kai = kaiList[kaiBangou];
 
@@ -553,7 +500,7 @@ function wakuWoHiraku(kaiBangou, kagi) {
 
 
 // ==============================
-// バンドまわり（キャンユニ / 新宿事変）
+// バンドまわり
 // ==============================
 
 function bandWoTasu(kaiBangou) {
@@ -577,6 +524,9 @@ function bandWoTasu(kaiBangou) {
     kaiList[kaiBangou].hiraitaWaku = waku;
   }
 
+  // 足したバンドを開いておく
+  kaiList[kaiBangou].hiraitaBand = kaiList[kaiBangou].bandList.length - 1;
+
   kakidasu();
   hozon();
 }
@@ -593,9 +543,55 @@ function bandWoKesu(kaiBangou, bandBangou) {
 
   kaiList[kaiBangou].bandList.splice(bandBangou, 1);
   kaiList[kaiBangou].henshuuChuu = -1;
+  kaiList[kaiBangou].hiraitaBand = -1;
 
   kakidasu();
   hozon();
+}
+
+
+// バンドを開く / 閉じる（同時に1つだけ）
+function bandWoHiraku(kaiBangou, bandBangou) {
+  const kai = kaiList[kaiBangou];
+
+  if (kai.hiraitaBand === bandBangou) {
+    kai.hiraitaBand = -1;
+  } else {
+    kai.hiraitaBand = bandBangou;
+  }
+
+  kakidasu();
+}
+
+
+// --- 長押しの見張り ---
+
+// 指が触れた（またはマウスを押した）
+function nagaoshiHajime(kaiBangou, bandBangou) {
+  nagaoshiShita = false;
+
+  nagaoshiTokei = setTimeout(function () {
+    nagaoshiShita = true;
+    bandMeiHenshuuKaishi(kaiBangou, bandBangou);
+  }, 600);
+}
+
+// 指が離れた
+function nagaoshiOwari(kaiBangou, bandBangou) {
+  clearTimeout(nagaoshiTokei);
+
+  // 長押しになっていたら、開け閉めはしない
+  if (nagaoshiShita) {
+    nagaoshiShita = false;
+    return;
+  }
+
+  bandWoHiraku(kaiBangou, bandBangou);
+}
+
+// 指がずれて外に出た
+function nagaoshiChuushi() {
+  clearTimeout(nagaoshiTokei);
 }
 
 
@@ -706,23 +702,46 @@ function hitoNoWakuWoKaeru(kaiBangou, hitoBangou, atarashiiWaku) {
 // 見た目を作る
 // ==============================
 
-// バンド1つ分
-function bandNoMitame(kaiBangou, bandBangou, band, henshuuChuu) {
+function bandNoMitame(kaiBangou, bandBangou, band, kai) {
 
+  // --- 名前の部分 ---
   let bandMeiBubun;
 
-  if (henshuuChuu === bandBangou) {
+  if (kai.henshuuChuu === bandBangou) {
+    // 編集中 → 入力欄
     bandMeiBubun =
       '<input class="band-mei-ran" id="bandmei-ran-' + kaiBangou + '-' + bandBangou + '"' +
         ' value="' + band.bandMei + '"' +
         ' onblur="bandMeiHenshuuOwari(' + kaiBangou + ',' + bandBangou + ', this.value)">';
   } else {
+    // 普段 → 押すと開く / 長押しで名前の編集
+    const hiraiteru = (kai.hiraitaBand === bandBangou);
+
+    let yajirushi;
+    if (hiraiteru) {
+      yajirushi = "▼";
+    } else {
+      yajirushi = "▶";
+    }
+
     bandMeiBubun =
-      '<div class="band-mei" onclick="bandMeiHenshuuKaishi(' + kaiBangou + ',' + bandBangou + ')">' +
-        band.bandMei + ' (' + band.memberList.length + '人)' +
+      '<div class="band-mei"' +
+        ' onmousedown="nagaoshiHajime(' + kaiBangou + ',' + bandBangou + ')"' +
+        ' onmouseup="nagaoshiOwari(' + kaiBangou + ',' + bandBangou + ')"' +
+        ' onmouseleave="nagaoshiChuushi()"' +
+        ' ontouchstart="nagaoshiHajime(' + kaiBangou + ',' + bandBangou + ')"' +
+        ' ontouchend="event.preventDefault(); nagaoshiOwari(' + kaiBangou + ',' + bandBangou + ')"' +
+        ' ontouchmove="nagaoshiChuushi()">' +
+        yajirushi + ' ' + band.bandMei + ' (' + band.memberList.length + '人)' +
       '</div>';
   }
 
+  // --- 閉じているなら、名前だけ返す ---
+  if (kai.hiraitaBand !== bandBangou && kai.henshuuChuu !== bandBangou) {
+    return '<div class="band">' + bandMeiBubun + '</div>';
+  }
+
+  // --- 開いているときの中身 ---
   let memberBubun = "";
 
   if (band.memberList.length === 0) {
@@ -751,18 +770,19 @@ function bandNoMitame(kaiBangou, bandBangou, band, henshuuChuu) {
 
   return '<div class="band">' +
       bandMeiBubun +
-      memberBubun +
-      '<div style="margin-top:8px;">' +
-        '<input class="ran" id="member-ran-' + kaiBangou + '-' + bandBangou + '" placeholder="メンバー名">' +
-        '<button class="btn" onclick="memberWoTasu(' + kaiBangou + ',' + bandBangou + ')">追加</button>' +
+      '<div class="band-naka">' +
+        memberBubun +
+        '<div style="margin-top:8px;">' +
+          '<input class="ran" id="member-ran-' + kaiBangou + '-' + bandBangou + '" placeholder="メンバー名">' +
+          '<button class="btn" onclick="memberWoTasu(' + kaiBangou + ',' + bandBangou + ')">追加</button>' +
+        '</div>' +
+        erabuBubun +
+        '<button class="band-kesu-btn" onclick="bandWoKesu(' + kaiBangou + ',' + bandBangou + ')">バンドを削除</button>' +
       '</div>' +
-      erabuBubun +
-      '<button class="band-kesu-btn" onclick="bandWoKesu(' + kaiBangou + ',' + bandBangou + ')">バンドを削除</button>' +
     '</div>';
 }
 
 
-// 人ひとり分（#けーおんぶ）
 function hitoNoMitame(kaiBangou, hitoBangou, hito) {
   let erabuBubun = '<select class="waku-erabu" onchange="hitoNoWakuWoKaeru(' + kaiBangou + ',' + hitoBangou + ', this.value)">';
 
@@ -786,7 +806,6 @@ function hitoNoMitame(kaiBangou, hitoBangou, hito) {
 }
 
 
-// カードの中身（キャンユニ / 新宿事変）
 function bandGataNoNaka(kaiBangou, kai) {
   let wakuBubun = "";
 
@@ -823,7 +842,7 @@ function bandGataNoNaka(kaiBangou, kai) {
 
     if (dasu) {
       for (const kumi of atsumeta) {
-        wakuBubun = wakuBubun + bandNoMitame(kaiBangou, kumi.bangou, kumi.band, kai.henshuuChuu);
+        wakuBubun = wakuBubun + bandNoMitame(kaiBangou, kumi.bangou, kumi.band, kai);
       }
     }
   }
@@ -847,20 +866,15 @@ function bandGataNoNaka(kaiBangou, kai) {
 }
 
 
-// カードの中身（#けーおんぶ）
 function keonbuNoNaka(kaiBangou, kai) {
   let zentai = "";
 
-  // DJ、VJ の順に書き出す
   for (const bumon of KEONBU_BUMON) {
 
     zentai = zentai + '<div class="bumon-midashi">' + bumon.mei + '</div>';
 
-    // その中の3つの枠
     for (const waku of WAKU_LIST) {
       const atsumeta = bumonWakuNoHito(kai, bumon.id, waku.id);
-
-      // 開け閉めを覚えるための合言葉（例: "dj-chuu"）
       const kagi = bumon.id + "-" + waku.id;
 
       let dasu;
@@ -901,7 +915,6 @@ function keonbuNoNaka(kaiBangou, kai) {
       }
     }
 
-    // この部門に人を足すところ
     let tsuika =
       '<div class="hito-tsuika">' +
         '<select id="hito-waku-' + kaiBangou + '-' + bumon.id + '">';
@@ -919,7 +932,6 @@ function keonbuNoNaka(kaiBangou, kai) {
     zentai = zentai + tsuika;
   }
 
-  // 回を削除するボタン
   zentai = zentai +
     '<div class="band-tsuika">' +
       '<button class="btn kesu-btn" onclick="kaiWoKesu(' + kaiBangou + ')">この回を削除</button>' +
@@ -929,7 +941,6 @@ function keonbuNoNaka(kaiBangou, kai) {
 }
 
 
-// カードの頭（キャンユニ / 新宿事変）
 function bandGataNoAtama(kai) {
   const ketteiNinzuu = wakuNoNinzuu(kai, "kettei");
   const nokori = kai.hitsuyouNinzuu - ketteiNinzuu;
@@ -948,7 +959,6 @@ function bandGataNoAtama(kai) {
 }
 
 
-// カードの頭（#けーおんぶ）
 function keonbuNoAtama(kai) {
   let nokoriBubun = "あと ";
   let ketteiGoukei = 0;
@@ -957,7 +967,6 @@ function keonbuNoAtama(kai) {
     const kettei = bumonWakuNoNinzuu(kai, bumon.id, "kettei");
     ketteiGoukei = ketteiGoukei + kettei;
 
-    // 残りの人数（マイナスにはしない）
     let nokori = bumon.jougen - kettei;
     if (nokori < 0) {
       nokori = 0;
@@ -974,9 +983,6 @@ function keonbuNoAtama(kai) {
 }
 
 
-// ------------------------------
-// 画面に書き出す
-// ------------------------------
 function kakidasu() {
   const basho = document.getElementById("ireru-basho");
   basho.innerHTML = "";
@@ -986,7 +992,6 @@ function kakidasu() {
 
     const keonbu = (kai.eventMei === "#けーおんぶ");
 
-    // 頭の部分
     let atamaBubun;
     if (keonbu) {
       atamaBubun = keonbuNoAtama(kai);
@@ -994,7 +999,6 @@ function kakidasu() {
       atamaBubun = bandGataNoAtama(kai);
     }
 
-    // 開いたときの中身
     let nakaBubun = "";
     if (kai.hiraiteru) {
       if (keonbu) {
