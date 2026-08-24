@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>キャンユニデータベース</title>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@500&display=swap" rel="stylesheet">
+
 <style>
   html {
     color-scheme: dark;
@@ -16,9 +20,27 @@
     margin: 0;
     padding: 16px;
   }
+  #atama {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
   h1 {
-    font-size: 20px;
+    font-family: "Kiwi Maru", sans-serif;
+    font-size: 22px;
+    font-weight: 500;
     color: #f2f2f4;
+    margin: 12px 0;
+  }
+  #modosu-btn {
+    font-size: 14px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    background: #6a5acd;
+    color: white;
+    white-space: nowrap;
   }
   .kai {
     background: #26262c;
@@ -265,7 +287,10 @@
 
 <body>
 
-<h1>キャンユニデータベース</h1>
+<div id="atama">
+  <h1>キャンユニデータベース</h1>
+  <button id="modosu-btn" onclick="modosu()" style="display: none;">取り消し</button>
+</div>
 
 <div id="joutai">読み込み中...</div>
 
@@ -312,6 +337,49 @@ const KEONBU_BUMON = [
 
 let kaiList = [];
 let formHiraiteru = false;
+
+// 取り消し用に、1つ前のデータを1枚だけ取っておく
+let maeNoData = null;
+
+
+// ------------------------------
+// データを変える直前に、今の姿を覚えておく
+// ------------------------------
+function oboeru() {
+  maeNoData = JSON.stringify(kaiList);
+}
+
+
+// ------------------------------
+// 直前の姿に戻す
+// ------------------------------
+function modosu() {
+  if (maeNoData === null) {
+    return;
+  }
+
+  kaiList = JSON.parse(maeNoData);
+
+  // 1枚しか持たないので、使ったら捨てる
+  maeNoData = null;
+
+  kakidasu();
+  hozon();
+}
+
+
+// ------------------------------
+// 取り消しボタンを出す / 隠す
+// ------------------------------
+function botanKousin() {
+  const botan = document.getElementById("modosu-btn");
+
+  if (maeNoData === null) {
+    botan.style.display = "none";
+  } else {
+    botan.style.display = "block";
+  }
+}
 
 // 長押しを見張るための時計
 let nagaoshiTokei = null;
@@ -456,6 +524,8 @@ function formKirikae() {
 
 
 function kaiWoTasu() {
+  oboeru();
+
   const eventMei = document.getElementById("shin-event").value;
   const hizuke = document.getElementById("shin-hizuke").value;
   const ninzuu = Number(document.getElementById("shin-ninzuu").value);
@@ -492,6 +562,7 @@ function kaiWoKesu(kaiBangou) {
     return;
   }
 
+  oboeru();
   kaiList.splice(kaiBangou, 1);
 
   kakidasu();
@@ -523,6 +594,8 @@ function wakuWoHiraku(kaiBangou, kagi) {
 // ==============================
 
 function bandWoTasu(kaiBangou) {
+  oboeru();
+
   const ran = document.getElementById("band-ran-" + kaiBangou);
   const wakuRan = document.getElementById("band-waku-" + kaiBangou);
 
@@ -560,6 +633,7 @@ function bandWoKesu(kaiBangou, bandBangou) {
     return;
   }
 
+  oboeru();
   kaiList[kaiBangou].bandList.splice(bandBangou, 1);
   kaiList[kaiBangou].henshuuChuu = -1;
   kaiList[kaiBangou].hiraitaBand = -1;
@@ -630,6 +704,7 @@ function bandMeiHenshuuOwari(kaiBangou, bandBangou, atarashiiMei) {
   const namae = atarashiiMei.trim();
 
   if (namae !== "") {
+    oboeru();
     kaiList[kaiBangou].bandList[bandBangou].bandMei = namae;
   }
 
@@ -641,6 +716,7 @@ function bandMeiHenshuuOwari(kaiBangou, bandBangou, atarashiiMei) {
 
 
 function wakuWoKaeru(kaiBangou, bandBangou, atarashiiWaku) {
+  oboeru();
   kaiList[kaiBangou].bandList[bandBangou].waku = atarashiiWaku;
 
   kakidasu();
@@ -656,6 +732,7 @@ function memberWoTasu(kaiBangou, bandBangou) {
     return;
   }
 
+  oboeru();
   kaiList[kaiBangou].bandList[bandBangou].memberList.push(namae);
 
   kakidasu();
@@ -664,6 +741,7 @@ function memberWoTasu(kaiBangou, bandBangou) {
 
 
 function memberWoKesu(kaiBangou, bandBangou, memberBangou) {
+  oboeru();
   kaiList[kaiBangou].bandList[bandBangou].memberList.splice(memberBangou, 1);
 
   kakidasu();
@@ -686,6 +764,8 @@ function hitoWoTasu(kaiBangou, bumonId) {
     return;
   }
 
+  oboeru();
+
   kaiList[kaiBangou].hitoList.push({
     namae: namae,
     bumon: bumonId,
@@ -702,6 +782,7 @@ function hitoWoTasu(kaiBangou, bumonId) {
 
 
 function hitoWoKesu(kaiBangou, hitoBangou) {
+  oboeru();
   kaiList[kaiBangou].hitoList.splice(hitoBangou, 1);
 
   kakidasu();
@@ -710,6 +791,7 @@ function hitoWoKesu(kaiBangou, hitoBangou) {
 
 
 function hitoNoWakuWoKaeru(kaiBangou, hitoBangou, atarashiiWaku) {
+  oboeru();
   kaiList[kaiBangou].hitoList[hitoBangou].waku = atarashiiWaku;
 
   kakidasu();
@@ -775,17 +857,22 @@ function bandNoMitame(kaiBangou, bandBangou, band, kai) {
     }
   }
 
-  let erabuBubun = '<select class="waku-erabu" onchange="wakuWoKaeru(' + kaiBangou + ',' + bandBangou + ', this.value)">';
+  // 出演決定に入っているものは、枠を動かさないのでリストを出さない
+  let erabuBubun = "";
 
-  for (const waku of WAKU_LIST) {
-    let erabareteru = "";
-    if (band.waku === waku.id) {
-      erabareteru = " selected";
+  if (band.waku !== "kettei") {
+    erabuBubun = '<select class="waku-erabu" onchange="wakuWoKaeru(' + kaiBangou + ',' + bandBangou + ', this.value)">';
+
+    for (const waku of WAKU_LIST) {
+      let erabareteru = "";
+      if (band.waku === waku.id) {
+        erabareteru = " selected";
+      }
+      erabuBubun = erabuBubun + '<option value="' + waku.id + '"' + erabareteru + '>' + waku.mei + '</option>';
     }
-    erabuBubun = erabuBubun + '<option value="' + waku.id + '"' + erabareteru + '>' + waku.mei + '</option>';
-  }
 
-  erabuBubun = erabuBubun + '</select>';
+    erabuBubun = erabuBubun + '</select>';
+  }
 
   return '<div class="band">' +
       bandMeiBubun +
@@ -803,17 +890,22 @@ function bandNoMitame(kaiBangou, bandBangou, band, kai) {
 
 
 function hitoNoMitame(kaiBangou, hitoBangou, hito) {
-  let erabuBubun = '<select class="waku-erabu" onchange="hitoNoWakuWoKaeru(' + kaiBangou + ',' + hitoBangou + ', this.value)">';
+  // 出演決定に入っている人は、枠を動かさないのでリストを出さない
+  let erabuBubun = "";
 
-  for (const waku of WAKU_LIST) {
-    let erabareteru = "";
-    if (hito.waku === waku.id) {
-      erabareteru = " selected";
+  if (hito.waku !== "kettei") {
+    erabuBubun = '<select class="waku-erabu" onchange="hitoNoWakuWoKaeru(' + kaiBangou + ',' + hitoBangou + ', this.value)">';
+
+    for (const waku of WAKU_LIST) {
+      let erabareteru = "";
+      if (hito.waku === waku.id) {
+        erabareteru = " selected";
+      }
+      erabuBubun = erabuBubun + '<option value="' + waku.id + '"' + erabareteru + '>' + waku.mei + '</option>';
     }
-    erabuBubun = erabuBubun + '<option value="' + waku.id + '"' + erabareteru + '>' + waku.mei + '</option>';
-  }
 
-  erabuBubun = erabuBubun + '</select>';
+    erabuBubun = erabuBubun + '</select>';
+  }
 
   return '<div class="band">' +
       '<div class="member-gyou">' +
@@ -1040,6 +1132,8 @@ function kakidasu() {
 
     basho.appendChild(card);
   }
+
+  botanKousin();
 }
 
 yomikomu();
