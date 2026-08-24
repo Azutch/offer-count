@@ -429,6 +429,44 @@
     width: 100%;
   }
 
+  /* 収支計算 */
+  .midashi-waku {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .shuushi-btn {
+    font-size: 13px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    background: #3a3a44;
+    color: #e8e8ea;
+    flex-shrink: 0;
+  }
+  #shuushi-moji {
+    background: #1f1f25;
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #e8e8ea;
+    white-space: pre-wrap;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  .copy-btn {
+    font-size: 15px;
+    padding: 12px 8px;
+    border: none;
+    border-radius: 8px;
+    background: #6a5acd;
+    color: white;
+    width: 100%;
+    margin-top: 12px;
+  }
+
   /* セット表 */
   #sethyou-gazou {
     width: 100%;
@@ -959,6 +997,79 @@ function tenpure() {
 function shuffleBand() {
   // ここに、これから中身を作る
 }
+
+// ==============================
+// 収支計算（キャンユニ / 新宿事変 だけ）
+// ==============================
+
+// 1人あたりの金額
+const HITORI_NO_KINGAKU = 3000;
+
+// 支出の見込み（決まった額）
+const SHISHUTSU = 40000;
+
+
+// 12345 を 12,345 の形にする
+function kingakuNoKaki(kazu) {
+  return kazu.toLocaleString("ja-JP");
+}
+
+
+// 2026-09-16 を 9月16日 の形にする
+function hizukeNoKaki(hizuke) {
+  const bubun = hizuke.split("-");
+
+  if (bubun.length !== 3) {
+    return hizuke;
+  }
+
+  return Number(bubun[1]) + "月" + Number(bubun[2]) + "日";
+}
+
+
+function shuushiWoHiraku(kaiBangou) {
+  const kai = kaiList[kaiBangou];
+
+  // 出演決定の人数
+  const enjaNinzuu = wakuNoNinzuu(kai, "kettei");
+  const enjaKingaku = enjaNinzuu * HITORI_NO_KINGAKU;
+
+  // 来客は、いまは数えない
+  const kyakuNinzuu = 0;
+  const kyakuKingaku = 0;
+
+  const uriage = enjaKingaku + kyakuKingaku;
+  const shuushi = uriage - SHISHUTSU;
+
+  const moji =
+    hizukeNoKaki(kai.hizuke) + "\n" +
+    "確定収支予想\n" +
+    "\n" +
+    "確定演者 " + enjaNinzuu + "名 " + kingakuNoKaki(enjaKingaku) + "円\n" +
+    "確定来客 " + kyakuNinzuu + "名 " + kingakuNoKaki(kyakuKingaku) + "円\n" +
+    "確定売上 " + kingakuNoKaki(uriage) + "円\n" +
+    "支出予想 " + kingakuNoKaki(SHISHUTSU) + "円\n" +
+    "最低収支 " + kingakuNoKaki(shuushi) + "円";
+
+  const nakami =
+    '<div id="shuushi-moji">' + moji + '</div>' +
+    '<button class="copy-btn" onclick="shuushiWoCopy()">コピーする</button>';
+
+  popupWoHiraku("収支計算", nakami);
+}
+
+
+// 出ている文章をコピーする
+function shuushiWoCopy() {
+  const moji = document.getElementById("shuushi-moji").textContent;
+
+  navigator.clipboard.writeText(moji).then(function () {
+    alert("コピーしました");
+  }, function () {
+    alert("コピーできませんでした。文字を長押しして選んでください。");
+  });
+}
+
 
 // ==============================
 // セット表
@@ -2240,12 +2351,22 @@ function kakidasu() {
       }
     }
 
+    // 収支計算のボタン（けーおんぶには出さない）
+    let shuushiBotan = "";
+    if (!keonbu) {
+      shuushiBotan =
+        '<button class="shuushi-btn" onclick="event.stopPropagation(); shuushiWoHiraku(' + kaiBangou + ')">収支</button>';
+    }
+
     const card = document.createElement("div");
     card.className = "kai";
 
     card.innerHTML =
       '<div class="kai-atama" onclick="kirikaeru(' + kaiBangou + ')">' +
-        '<div class="midashi-gyou">' + kai.eventMei + ' ' + hizukeWoMijikaku(kai.hizuke) + '</div>' +
+        '<div class="midashi-waku">' +
+          '<div class="midashi-gyou">' + kai.eventMei + ' ' + hizukeWoMijikaku(kai.hizuke) + '</div>' +
+          shuushiBotan +
+        '</div>' +
         atamaBubun +
       '</div>' +
       taskNoMitame(kaiBangou, kai) +
