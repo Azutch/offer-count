@@ -57,15 +57,12 @@
   .kai-atama {
     cursor: pointer;
   }
-  .event-mei {
-    font-size: 13px;
-    color: #9a9aa4;
-  }
-  .hizuke {
-    font-size: 18px;
+  /* イベント名と日付を1行にまとめたもの */
+  .midashi-gyou {
+    font-size: 22px;
     font-weight: bold;
-    margin: 4px 0;
     color: #f2f2f4;
+    margin: 0 0 6px 0;
   }
   .nokori {
     font-size: 22px;
@@ -533,6 +530,26 @@ function keonbuIroWoKimeru(bumon, ninzuu) {
     return "kiiro";
   }
   return "aka";
+}
+
+
+// ------------------------------
+// 2026-09-16 を 9/16 の形にする
+// ------------------------------
+function hizukeWoMijikaku(hizuke) {
+  // "2026-09-16" を "-" で3つに切り分ける
+  const bubun = hizuke.split("-");
+
+  if (bubun.length !== 3) {
+    // 思った形でなければ、そのまま返す
+    return hizuke;
+  }
+
+  // 頭の0を取る（"09" → 9）
+  const tsuki = Number(bubun[1]);
+  const hi = Number(bubun[2]);
+
+  return tsuki + "/" + hi;
 }
 
 
@@ -1168,8 +1185,7 @@ function kakidasu() {
 
     card.innerHTML =
       '<div class="kai-atama" onclick="kirikaeru(' + kaiBangou + ')">' +
-        '<div class="event-mei">' + kai.eventMei + '</div>' +
-        '<div class="hizuke">' + kai.hizuke + '</div>' +
+        '<div class="midashi-gyou">' + kai.eventMei + ' ' + hizukeWoMijikaku(kai.hizuke) + '</div>' +
         atamaBubun +
       '</div>' +
       nakaBubun;
