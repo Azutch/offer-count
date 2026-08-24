@@ -19,13 +19,27 @@
     color: #e8e8ea;
     margin: 0;
     padding: 16px;
+    -webkit-user-select: none;
+    user-select: none;
   }
+  /* 入力欄の中だけは、選べるようにしておく */
+  input, textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  /* 左・真ん中・右 の3つに分ける。
+     左と右を同じ幅にすると、真ん中がぴったり中央になる */
   #atama {
-    position: relative;
-    display: flex;
+    display: grid;
+    grid-template-columns: 52px 1fr 52px;
     align-items: center;
-    justify-content: center;
-    min-height: 44px;
+    min-height: 48px;
+  }
+  #atama-hidari {
+    justify-self: start;
+  }
+  #atama-migi {
+    justify-self: end;
   }
   h1 {
     font-family: "Kiwi Maru", sans-serif;
@@ -35,24 +49,23 @@
     margin: 12px 0;
     text-align: center;
   }
-  #atama-botan-basho {
-    position: absolute;
-    right: 0;
+  #modosu-btn {
+    font-size: 18px;
+    line-height: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    background: #f2f2f4;
+    color: #1a1a1e;
   }
-  #atama-botan {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  #modosu-btn,
   #settei-btn {
     font-size: 18px;
     line-height: 1;
     padding: 8px 12px;
     border: none;
     border-radius: 8px;
-    background: #3a3a44;
-    color: white;
+    background: #f2f2f4;
+    color: #1a1a1e;
   }
   .kai {
     background: #26262c;
@@ -106,14 +119,15 @@
 
   /* タスクのチェックボックス */
   .task-waku {
-    margin-top: 12px;
+    margin-top: 10px;
   }
   .task-gyou {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 0;
+    padding: 1px 0;
     font-size: 14px;
+    line-height: 1.35;
     color: #ccccd4;
     user-select: none;
   }
@@ -305,11 +319,12 @@
   }
   #dougu button {
     font-size: 15px;
+    font-weight: bold;
     padding: 14px 8px;
     border: none;
     border-radius: 10px;
-    background: #32323a;
-    color: #e8e8ea;
+    background: #f2f2f4;
+    color: #1a1a1e;
   }
 
   #tsuika-btn {
@@ -317,7 +332,7 @@
     padding: 10px 16px;
     border: none;
     border-radius: 8px;
-    background: #4d4d5c;
+    background: #6a5acd;
     color: white;
     margin-bottom: 12px;
     width: 100%;
@@ -362,12 +377,12 @@
 <body>
 
 <div id="atama">
+  <div id="atama-hidari">
+    <button id="modosu-btn" onclick="modosu()" style="display: none;">←</button>
+  </div>
   <h1>キャンユニデータベース</h1>
-  <div id="atama-botan-basho">
-    <div id="atama-botan">
-      <button id="modosu-btn" onclick="modosu()" style="display: none;">🔙</button>
-      <button id="settei-btn" onclick="setteiWoHiraku()">⚙️</button>
-    </div>
+  <div id="atama-migi">
+    <button id="settei-btn" onclick="setteiWoHiraku()">⚙️</button>
   </div>
 </div>
 
