@@ -88,8 +88,10 @@
   }
   .waku-midashi.oseru {
     background: #32323a;
-    border-radius: 8px;
-    padding: 10px 12px;
+    border-radius: 6px;
+    padding: 5px 10px;
+    margin: 10px 0 6px 0;
+    font-size: 13px;
     cursor: pointer;
   }
 
@@ -194,17 +196,21 @@
     color: white;
     margin-left: 6px;
   }
-  .kesu-btn {
-    background: #b8433f;
-    margin-top: 12px;
-    margin-left: 0;
+  .kai-kesu {
+    background: none;
+    border: none;
+    color: #d9534f;
+    font-size: 13px;
+    padding: 0;
+    margin-top: 18px;
+    text-decoration: underline;
     display: block;
   }
 
   .band-tsuika {
-    margin-top: 18px;
-    padding-top: 14px;
-    border-top: 1px solid #3a3a44;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #3a3a44;
   }
   .band-tsuika select {
     font-size: 15px;
@@ -218,7 +224,8 @@
     color: #e8e8ea;
   }
   .hito-tsuika {
-    margin-top: 10px;
+    margin-top: 8px;
+    margin-bottom: 12px;
   }
   .hito-tsuika select {
     font-size: 15px;
@@ -958,6 +965,7 @@ function bandGataNoNaka(kaiBangou, kai) {
     }
   }
 
+  // バンドを足すところ（一番上に置く）
   let tsuikaBubun =
     '<div class="band-tsuika">' +
       '<select id="band-waku-' + kaiBangou + '">';
@@ -970,10 +978,13 @@ function bandGataNoNaka(kaiBangou, kai) {
       '</select>' +
       '<input class="ran" id="band-ran-' + kaiBangou + '" placeholder="バンド名">' +
       '<button class="btn" onclick="bandWoTasu(' + kaiBangou + ')">追加</button>' +
-      '<button class="btn kesu-btn" onclick="kaiWoKesu(' + kaiBangou + ')">この回を削除</button>' +
     '</div>';
 
-  return '<div class="naka">' + wakuBubun + tsuikaBubun + '</div>';
+  // 回を削除（一番下に、ただの赤文字で）
+  const kesuBubun =
+    '<button class="kai-kesu" onclick="kaiWoKesu(' + kaiBangou + ')">この回を削除</button>';
+
+  return '<div class="naka">' + tsuikaBubun + wakuBubun + kesuBubun + '</div>';
 }
 
 
@@ -983,6 +994,23 @@ function keonbuNoNaka(kaiBangou, kai) {
   for (const bumon of KEONBU_BUMON) {
 
     zentai = zentai + '<div class="bumon-midashi">' + bumon.mei + '</div>';
+
+    // 人を足すところ（部門の見出しのすぐ下に置く）
+    let tsuika =
+      '<div class="hito-tsuika">' +
+        '<select id="hito-waku-' + kaiBangou + '-' + bumon.id + '">';
+
+    for (const waku of WAKU_LIST) {
+      tsuika = tsuika + '<option value="' + waku.id + '">' + waku.mei + ' に追加</option>';
+    }
+
+    tsuika = tsuika +
+        '</select>' +
+        '<input class="ran" id="hito-ran-' + kaiBangou + '-' + bumon.id + '" placeholder="' + bumon.mei + 'の名前">' +
+        '<button class="btn" onclick="hitoWoTasu(' + kaiBangou + ', \'' + bumon.id + '\')">追加</button>' +
+      '</div>';
+
+    zentai = zentai + tsuika;
 
     for (const waku of WAKU_LIST) {
       const atsumeta = bumonWakuNoHito(kai, bumon.id, waku.id);
@@ -1026,27 +1054,11 @@ function keonbuNoNaka(kaiBangou, kai) {
       }
     }
 
-    let tsuika =
-      '<div class="hito-tsuika">' +
-        '<select id="hito-waku-' + kaiBangou + '-' + bumon.id + '">';
-
-    for (const waku of WAKU_LIST) {
-      tsuika = tsuika + '<option value="' + waku.id + '">' + waku.mei + ' に追加</option>';
-    }
-
-    tsuika = tsuika +
-        '</select>' +
-        '<input class="ran" id="hito-ran-' + kaiBangou + '-' + bumon.id + '" placeholder="' + bumon.mei + 'の名前">' +
-        '<button class="btn" onclick="hitoWoTasu(' + kaiBangou + ', \'' + bumon.id + '\')">追加</button>' +
-      '</div>';
-
-    zentai = zentai + tsuika;
   }
 
+  // 回を削除（一番下に、ただの赤文字で）
   zentai = zentai +
-    '<div class="band-tsuika">' +
-      '<button class="btn kesu-btn" onclick="kaiWoKesu(' + kaiBangou + ')">この回を削除</button>' +
-    '</div>';
+    '<button class="kai-kesu" onclick="kaiWoKesu(' + kaiBangou + ')">この回を削除</button>';
 
   return '<div class="naka">' + zentai + '</div>';
 }
