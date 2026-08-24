@@ -101,6 +101,13 @@
     cursor: pointer;
   }
 
+  /* 出演決定と返答待ちの間の区切り線 */
+  .kugiri {
+    height: 1px;
+    background: #3f3f4a;
+    margin: 22px 0 6px 0;
+  }
+
   .bumon-midashi {
     font-size: 17px;
     font-weight: bold;
@@ -980,6 +987,11 @@ function bandGataNoNaka(kaiBangou, kai) {
         wakuBubun = wakuBubun + bandNoMitame(kaiBangou, kumi.bangou, kumi.band, kai);
       }
     }
+
+    // 出演決定を書き終えたら、区切り線を1本入れる
+    if (waku.id === "kettei") {
+      wakuBubun = wakuBubun + '<div class="kugiri"></div>';
+    }
   }
 
   // バンドを足すところ（一番上に置く）
@@ -1068,6 +1080,11 @@ function keonbuNoNaka(kaiBangou, kai) {
             zentai = zentai + hitoNoMitame(kaiBangou, kumi.bangou, kumi.hito);
           }
         }
+      }
+
+      // 出演決定を書き終えたら、区切り線を1本入れる
+      if (waku.id === "kettei") {
+        zentai = zentai + '<div class="kugiri"></div>';
       }
     }
 
