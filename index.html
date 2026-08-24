@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>オファー人数</title>
+<title>キャンユニデータベース</title>
 
 <style>
   html {
@@ -124,7 +124,7 @@
     border: none;
     border-radius: 4px;
     background: #44444f;
-    color: #dddde2;
+    color: #ddddE2;
   }
   .member-nashi {
     font-size: 13px;
@@ -262,9 +262,10 @@
   }
 </style>
 </head>
+
 <body>
 
-<h1>オファー人数</h1>
+<h1>キャンユニデータベース</h1>
 
 <div id="joutai">読み込み中...</div>
 
@@ -517,6 +518,10 @@ function wakuWoHiraku(kaiBangou, kagi) {
 }
 
 
+// ==============================
+// バンドまわり
+// ==============================
+
 function bandWoTasu(kaiBangou) {
   const ran = document.getElementById("band-ran-" + kaiBangou);
   const wakuRan = document.getElementById("band-waku-" + kaiBangou);
@@ -538,6 +543,7 @@ function bandWoTasu(kaiBangou) {
     kaiList[kaiBangou].hiraitaWaku = waku;
   }
 
+  // 足したバンドを開いておく
   kaiList[kaiBangou].hiraitaBand = kaiList[kaiBangou].bandList.length - 1;
 
   kakidasu();
@@ -563,6 +569,7 @@ function bandWoKesu(kaiBangou, bandBangou) {
 }
 
 
+// バンドを開く / 閉じる（同時に1つだけ）
 function bandWoHiraku(kaiBangou, bandBangou) {
   const kai = kaiList[kaiBangou];
 
@@ -576,6 +583,9 @@ function bandWoHiraku(kaiBangou, bandBangou) {
 }
 
 
+// --- 長押しの見張り ---
+
+// 指が触れた（またはマウスを押した）
 function nagaoshiHajime(kaiBangou, bandBangou) {
   nagaoshiShita = false;
 
@@ -585,10 +595,11 @@ function nagaoshiHajime(kaiBangou, bandBangou) {
   }, 600);
 }
 
-
+// 指が離れた
 function nagaoshiOwari(kaiBangou, bandBangou) {
   clearTimeout(nagaoshiTokei);
 
+  // 長押しになっていたら、開け閉めはしない
   if (nagaoshiShita) {
     nagaoshiShita = false;
     return;
@@ -597,7 +608,7 @@ function nagaoshiOwari(kaiBangou, bandBangou) {
   bandWoHiraku(kaiBangou, bandBangou);
 }
 
-
+// 指がずれて外に出た
 function nagaoshiChuushi() {
   clearTimeout(nagaoshiTokei);
 }
@@ -660,6 +671,10 @@ function memberWoKesu(kaiBangou, bandBangou, memberBangou) {
 }
 
 
+// ==============================
+// 人まわり（#けーおんぶ）
+// ==============================
+
 function hitoWoTasu(kaiBangou, bumonId) {
   const ran = document.getElementById("hito-ran-" + kaiBangou + "-" + bumonId);
   const wakuRan = document.getElementById("hito-waku-" + kaiBangou + "-" + bumonId);
@@ -702,23 +717,30 @@ function hitoNoWakuWoKaeru(kaiBangou, hitoBangou, atarashiiWaku) {
 }
 
 
+// ==============================
+// 見た目を作る
+// ==============================
+
 function bandNoMitame(kaiBangou, bandBangou, band, kai) {
 
+  // --- 名前の部分 ---
   let bandMeiBubun;
 
   if (kai.henshuuChuu === bandBangou) {
+    // 編集中 → 入力欄
     bandMeiBubun =
       '<input class="band-mei-ran" id="bandmei-ran-' + kaiBangou + '-' + bandBangou + '"' +
         ' value="' + band.bandMei + '"' +
         ' onblur="bandMeiHenshuuOwari(' + kaiBangou + ',' + bandBangou + ', this.value)">';
   } else {
+    // 普段 → 押すと開く / 長押しで名前の編集
     const hiraiteru = (kai.hiraitaBand === bandBangou);
 
     let yajirushi;
     if (hiraiteru) {
-      yajirushi = "▼";
+      yajirushi = "▼︎";
     } else {
-      yajirushi = "▶";
+      yajirushi = "▶︎";
     }
 
     bandMeiBubun =
@@ -733,10 +755,12 @@ function bandNoMitame(kaiBangou, bandBangou, band, kai) {
       '</div>';
   }
 
+  // --- 閉じているなら、名前だけ返す ---
   if (kai.hiraitaBand !== bandBangou && kai.henshuuChuu !== bandBangou) {
     return '<div class="band">' + bandMeiBubun + '</div>';
   }
 
+  // --- 開いているときの中身 ---
   let memberBubun = "";
 
   if (band.memberList.length === 0) {
@@ -822,9 +846,9 @@ function bandGataNoNaka(kaiBangou, kai) {
 
       let yajirushi;
       if (dasu) {
-        yajirushi = "▼";
+        yajirushi = "▼︎";
       } else {
-        yajirushi = "▶";
+        yajirushi = "▶︎";
       }
 
       midashi =
@@ -886,9 +910,9 @@ function keonbuNoNaka(kaiBangou, kai) {
 
         let yajirushi;
         if (dasu) {
-          yajirushi = "▼";
+          yajirushi = "▼︎";
         } else {
-          yajirushi = "▶";
+          yajirushi = "▶︎";
         }
 
         midashi =
