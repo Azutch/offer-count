@@ -21,17 +21,23 @@
     padding: 16px;
   }
   #atama {
+    position: relative;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    justify-content: center;
+    min-height: 44px;
   }
   h1 {
     font-family: "Kiwi Maru", sans-serif;
     font-size: 22px;
-    font-weight: 500;
+    font-weight: 700;
     color: #f2f2f4;
     margin: 12px 0;
+    text-align: center;
+  }
+  #atama-botan-basho {
+    position: absolute;
+    right: 0;
   }
   #atama-botan {
     display: flex;
@@ -96,6 +102,43 @@
     margin: 10px 0 6px 0;
     font-size: 13px;
     cursor: pointer;
+  }
+
+  /* タスクのチェックボックス */
+  .task-waku {
+    margin-top: 12px;
+  }
+  .task-gyou {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 14px;
+    color: #ccccd4;
+    user-select: none;
+  }
+  .task-hidari {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .task-box {
+    font-size: 16px;
+    line-height: 1;
+  }
+  .task-sumi {
+    color: #7a7a86;
+    text-decoration: line-through;
+  }
+  .task-nissuu {
+    font-size: 13px;
+    color: #8a8a94;
+    white-space: nowrap;
+  }
+  .task-nissuu.okure {
+    color: #ff6b6b;
+    font-weight: bold;
   }
 
   /* 出演決定と返答待ちの間の区切り線 */
@@ -320,9 +363,11 @@
 
 <div id="atama">
   <h1>キャンユニデータベース</h1>
-  <div id="atama-botan">
-    <button id="modosu-btn" onclick="modosu()" style="display: none;">🔙</button>
-    <button id="settei-btn" onclick="setteiWoHiraku()">⚙️</button>
+  <div id="atama-botan-basho">
+    <div id="atama-botan">
+      <button id="modosu-btn" onclick="modosu()" style="display: none;">🔙</button>
+      <button id="settei-btn" onclick="setteiWoHiraku()">⚙️</button>
+    </div>
   </div>
 </div>
 
@@ -370,6 +415,31 @@ const WAKU_LIST = [
   { id: "yotei",  mei: "声掛け予定" }
 ];
 
+// ------------------------------
+// イベントごとのタスク
+//   id  … データに保存される名札（変えない）
+//   mei … 画面に出る名前
+//   mae … イベントの何日前が締切か
+// ------------------------------
+const TASK_LIST = {
+  "キャンユニ": [
+    { id: "atsumeru", mei: "32人集める",            mae: 21 },
+    { id: "ttSoufu",  mei: "タイムテーブル送付",     mae: 14 },
+    { id: "ttHappyo", mei: "TT発表・セット表を依頼", mae: 7 },
+    { id: "setMorau", mei: "セット表をもらう",       mae: 2 }
+  ],
+  "新宿事変": [
+    { id: "atsumeru", mei: "32人集める",            mae: 21 },
+    { id: "ttSoufu",  mei: "タイムテーブル送付",     mae: 14 },
+    { id: "ttHappyo", mei: "TT発表・セット表を依頼", mae: 7 },
+    { id: "setMorau", mei: "セット表をもらう",       mae: 2 }
+  ],
+  "#けーおんぶ": [
+    { id: "enjaKettei", mei: "演者決定",           mae: 14 },
+    { id: "ttKokuchi",  mei: "タイムテーブル告知", mae: 7 }
+  ]
+};
+
 const KEONBU_BUMON = [
   { id: "dj", mei: "DJ", jougen: 8, kiiroKara: 6, midoriKara: 8 },
   { id: "vj", mei: "VJ", jougen: 3, kiiroKara: 2, midoriKara: 3 }
@@ -406,6 +476,157 @@ function modosu() {
 
   kakidasu();
   hozon();
+}
+
+
+// ==============================
+// タスクのチェックボックス
+// ==============================
+
+// 長押しを見張るための時計（バンド名とは別に用意する）
+let taskTokei = null;
+let taskNagaoshiShita = false;
+
+
+// 指が触れた
+function taskOshiHajime(kaiBangou, taskId) {
+  taskNagaoshiShita = false;
+
+  taskTokei = setTimeout(function () {
+    taskNagaoshiShita = true;
+    taskWoHazusu(kaiBangou, taskId);
+  }, 600);
+}
+
+
+// 指が離れた
+function taskOshiOwari(kaiBangou, taskId) {
+  clearTimeout(taskTokei);
+
+  // 長押しになっていたら、ここでは何もしない
+  if (taskNagaoshiShita) {
+    taskNagaoshiShita = false;
+    return;
+  }
+
+  taskWoTsukeru(kaiBangou, taskId);
+}
+
+
+function taskOshiChuushi() {
+  clearTimeout(taskTokei);
+}
+
+
+// チェックを入れる（確認あり）
+function taskWoTsukeru(kaiBangou, taskId) {
+  const kai = kaiList[kaiBangou];
+
+  // すでに入っているなら、何もしない（外すのは長押し）
+  if (kai.taskDone[taskId] === true) {
+    return;
+  }
+
+  // タスクの名前を探す
+  const ichiran = TASK_LIST[kai.eventMei];
+  let mei = taskId;
+
+  for (const task of ichiran) {
+    if (task.id === taskId) {
+      mei = task.mei;
+    }
+  }
+
+  const kotae = confirm("「" + mei + "」は終わった？");
+
+  if (kotae === false) {
+    return;
+  }
+
+  oboeru();
+  kai.taskDone[taskId] = true;
+
+  kakidasu();
+  hozon();
+}
+
+
+// チェックを外す（長押しで呼ばれる）
+function taskWoHazusu(kaiBangou, taskId) {
+  const kai = kaiList[kaiBangou];
+
+  // 入っていないなら、何もしない
+  if (kai.taskDone[taskId] !== true) {
+    return;
+  }
+
+  oboeru();
+  kai.taskDone[taskId] = false;
+
+  kakidasu();
+  hozon();
+}
+
+
+// タスクの見た目を作る
+function taskNoMitame(kaiBangou, kai) {
+  const ichiran = TASK_LIST[kai.eventMei];
+
+  // 知らないイベントなら、何も出さない
+  if (!ichiran) {
+    return "";
+  }
+
+  let zentai = '<div class="task-waku">';
+
+  for (const task of ichiran) {
+    const owatta = (kai.taskDone[task.id] === true);
+
+    // チェックの箱
+    let hako;
+    let mojiClass = "";
+
+    if (owatta) {
+      hako = "☑";
+      mojiClass = " task-sumi";
+    } else {
+      hako = "☐";
+    }
+
+    // 右側の日数（終わっていたら出さない）
+    let nissuuBubun = "";
+
+    if (!owatta) {
+      const nokori = nokoriNissuu(kai.hizuke, task.mae);
+
+      if (nokori > 0) {
+        nissuuBubun = '<span class="task-nissuu">あと ' + nokori + '日</span>';
+      } else if (nokori === 0) {
+        nissuuBubun = '<span class="task-nissuu okure">！ 今日まで</span>';
+      } else {
+        nissuuBubun = '<span class="task-nissuu okure">！ ' + nokori + '日</span>';
+      }
+    }
+
+    zentai = zentai +
+      '<div class="task-gyou">' +
+        '<div class="task-hidari' + mojiClass + '"' +
+          ' onmousedown="taskOshiHajime(' + kaiBangou + ', \'' + task.id + '\')"' +
+          ' onmouseup="taskOshiOwari(' + kaiBangou + ', \'' + task.id + '\')"' +
+          ' onmouseleave="taskOshiChuushi()"' +
+          ' ontouchstart="taskOshiHajime(' + kaiBangou + ', \'' + task.id + '\')"' +
+          ' ontouchend="event.preventDefault(); taskOshiOwari(' + kaiBangou + ', \'' + task.id + '\')"' +
+          ' ontouchmove="taskOshiChuushi()">' +
+          '<span class="task-box">' + hako + '</span>' +
+          '<span>' + task.mei + '</span>' +
+        '</div>' +
+        nissuuBubun +
+      '</div>';
+  }
+
+  zentai = zentai + '</div>';
+
+  return zentai;
 }
 
 
@@ -481,6 +702,9 @@ async function yomikomu() {
     if (!kai.hitoList) {
       kai.hitoList = [];
     }
+    if (!kai.taskDone) {
+      kai.taskDone = {};
+    }
   }
 
   kaiList = data;
@@ -497,7 +721,8 @@ function hozon() {
       hizuke: kai.hizuke,
       hitsuyouNinzuu: kai.hitsuyouNinzuu,
       bandList: kai.bandList,
-      hitoList: kai.hitoList
+      hitoList: kai.hitoList,
+      taskDone: kai.taskDone
     };
   });
 
@@ -577,6 +802,31 @@ function keonbuIroWoKimeru(bumon, ninzuu) {
 
 
 // ------------------------------
+// 締切まであと何日かを数える
+//   プラス … まだ余裕がある
+//   0     … 今日が締切
+//   マイナス … 過ぎている
+// ------------------------------
+function nokoriNissuu(hizuke, maeNoHi) {
+  // イベントの日
+  const eventBi = new Date(hizuke + "T00:00:00");
+
+  // その何日前が締切か
+  const shimekiri = new Date(eventBi);
+  shimekiri.setDate(shimekiri.getDate() - maeNoHi);
+
+  // 今日（時刻は0時にそろえる）
+  const kyou = new Date();
+  kyou.setHours(0, 0, 0, 0);
+
+  // 1日は 86400000 ミリ秒
+  const sa = shimekiri.getTime() - kyou.getTime();
+
+  return Math.round(sa / 86400000);
+}
+
+
+// ------------------------------
 // 2026-09-16 を 9/16 の形にする
 // ------------------------------
 function hizukeWoMijikaku(hizuke) {
@@ -639,6 +889,7 @@ function kaiWoTasu() {
     hitsuyouNinzuu: ninzuu,
     bandList: [],
     hitoList: [],
+    taskDone: {},
     hiraiteru: false,
     hiraitaWaku: saishoNoWaku,
     hiraitaBand: -1,
@@ -1231,6 +1482,7 @@ function kakidasu() {
         '<div class="midashi-gyou">' + kai.eventMei + ' ' + hizukeWoMijikaku(kai.hizuke) + '</div>' +
         atamaBubun +
       '</div>' +
+      taskNoMitame(kaiBangou, kai) +
       nakaBubun;
 
     basho.appendChild(card);
