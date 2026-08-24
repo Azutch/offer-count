@@ -253,6 +253,22 @@
     margin-bottom: 12px;
   }
 
+  /* 4つのボタン（2×2） */
+  #dougu {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 14px 0;
+  }
+  #dougu button {
+    font-size: 15px;
+    padding: 14px 8px;
+    border: none;
+    border-radius: 10px;
+    background: #32323a;
+    color: #e8e8ea;
+  }
+
   #tsuika-btn {
     font-size: 16px;
     padding: 10px 16px;
@@ -311,6 +327,13 @@
 </div>
 
 <div id="joutai">読み込み中...</div>
+
+<div id="dougu">
+  <button onclick="dokodemoDoor()">どこでもドア</button>
+  <button onclick="tenpure()">テンプレート</button>
+  <button onclick="shuffleBand()">シャッフルバンド</button>
+  <button onclick="setHyou()">セット表</button>
+</div>
 
 <button id="tsuika-btn" onclick="formKirikae()">＋ 回を追加</button>
 
@@ -383,6 +406,26 @@ function modosu() {
 
   kakidasu();
   hozon();
+}
+
+
+// ------------------------------
+// 4つのボタン（中身はこれから決める）
+// ------------------------------
+function dokodemoDoor() {
+  // ここに、これから中身を作る
+}
+
+function tenpure() {
+  // ここに、これから中身を作る
+}
+
+function shuffleBand() {
+  // ここに、これから中身を作る
+}
+
+function setHyou() {
+  // ここに、これから中身を作る
 }
 
 
