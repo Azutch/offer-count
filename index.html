@@ -226,30 +226,28 @@
     border-bottom: 1px solid #3a3a44;
   }
   .band-tsuika select {
-    font-size: 15px;
-    padding: 8px;
+    font-size: 13px;
+    padding: 5px 8px;
     border: 1px solid #4a4a56;
     border-radius: 6px;
-    width: 100%;
-    box-sizing: border-box;
-    margin-bottom: 8px;
+    width: auto;
+    margin-top: 8px;
     background: #1f1f25;
-    color: #e8e8ea;
+    color: #a8a8b2;
   }
   .hito-tsuika {
     margin-top: 8px;
     margin-bottom: 12px;
   }
   .hito-tsuika select {
-    font-size: 15px;
-    padding: 8px;
+    font-size: 13px;
+    padding: 5px 8px;
     border: 1px solid #4a4a56;
     border-radius: 6px;
-    width: 100%;
-    box-sizing: border-box;
-    margin-bottom: 8px;
+    width: auto;
+    margin-top: 8px;
     background: #1f1f25;
-    color: #e8e8ea;
+    color: #a8a8b2;
   }
 
   #joutai {
@@ -429,7 +427,11 @@ async function yomikomu() {
 
   for (const kai of data) {
     kai.hiraiteru = false;
-    kai.hiraitaWaku = "";
+    if (kai.eventMei === "#けーおんぶ") {
+      kai.hiraitaWaku = "dj-kettei";
+    } else {
+      kai.hiraitaWaku = "kettei";
+    }
     kai.hiraitaBand = -1;
     kai.henshuuChuu = -1;
 
@@ -565,6 +567,12 @@ function kaiWoTasu() {
     return;
   }
 
+  // 最初に開いておく枠（けーおんぶだけ合言葉が違う）
+  let saishoNoWaku = "kettei";
+  if (eventMei === "#けーおんぶ") {
+    saishoNoWaku = "dj-kettei";
+  }
+
   kaiList.push({
     eventMei: eventMei,
     hizuke: hizuke,
@@ -572,7 +580,7 @@ function kaiWoTasu() {
     bandList: [],
     hitoList: [],
     hiraiteru: false,
-    hiraitaWaku: "",
+    hiraitaWaku: saishoNoWaku,
     hiraitaBand: -1,
     henshuuChuu: -1
   });
@@ -955,30 +963,20 @@ function bandGataNoNaka(kaiBangou, kai) {
     const atsumeta = wakuNoBand(kai, waku.id);
     const ninzuu = wakuNoNinzuu(kai, waku.id);
 
-    let dasu;
-    let midashi;
+    // 3つとも押して開け閉めできる（同時に開くのは1つだけ）
+    const dasu = (kai.hiraitaWaku === waku.id);
 
-    if (waku.id === "kettei") {
-      dasu = true;
-      midashi =
-        '<div class="waku-midashi">' +
-          waku.mei + '　' + atsumeta.length + 'バンド ' + ninzuu + '名' +
-        '</div>';
+    let yajirushi;
+    if (dasu) {
+      yajirushi = "▼︎";
     } else {
-      dasu = (kai.hiraitaWaku === waku.id);
-
-      let yajirushi;
-      if (dasu) {
-        yajirushi = "▼︎";
-      } else {
-        yajirushi = "▶︎";
-      }
-
-      midashi =
-        '<div class="waku-midashi oseru" onclick="wakuWoHiraku(' + kaiBangou + ', \'' + waku.id + '\')">' +
-          yajirushi + ' ' + waku.mei + '　' + atsumeta.length + 'バンド ' + ninzuu + '名' +
-        '</div>';
+      yajirushi = "▶︎";
     }
+
+    const midashi =
+      '<div class="waku-midashi oseru" onclick="wakuWoHiraku(' + kaiBangou + ', \'' + waku.id + '\')">' +
+        yajirushi + ' ' + waku.mei + '　' + atsumeta.length + 'バンド ' + ninzuu + '名' +
+      '</div>';
 
     wakuBubun = wakuBubun + midashi;
 
@@ -995,18 +993,23 @@ function bandGataNoNaka(kaiBangou, kai) {
   }
 
   // バンドを足すところ（一番上に置く）
-  let tsuikaBubun =
-    '<div class="band-tsuika">' +
-      '<select id="band-waku-' + kaiBangou + '">';
+  // 枠を選ぶリスト（下に置く）
+  let erabu = '<select id="band-waku-' + kaiBangou + '">';
 
   for (const waku of WAKU_LIST) {
-    tsuikaBubun = tsuikaBubun + '<option value="' + waku.id + '">' + waku.mei + ' に追加</option>';
+    erabu = erabu + '<option value="' + waku.id + '">' + waku.mei + ' に追加</option>';
   }
 
-  tsuikaBubun = tsuikaBubun +
-      '</select>' +
-      '<input class="ran" id="band-ran-' + kaiBangou + '" placeholder="バンド名">' +
-      '<button class="btn" onclick="bandWoTasu(' + kaiBangou + ')">追加</button>' +
+  erabu = erabu + '</select>';
+
+  // バンドを足すところ（名前が上、枠のリストが下）
+  const tsuikaBubun =
+    '<div class="band-tsuika">' +
+      '<div>' +
+        '<input class="ran" id="band-ran-' + kaiBangou + '" placeholder="バンド名">' +
+        '<button class="btn" onclick="bandWoTasu(' + kaiBangou + ')">追加</button>' +
+      '</div>' +
+      '<div>' + erabu + '</div>' +
     '</div>';
 
   // 回を削除（一番下に、ただの赤文字で）
@@ -1025,18 +1028,23 @@ function keonbuNoNaka(kaiBangou, kai) {
     zentai = zentai + '<div class="bumon-midashi">' + bumon.mei + '</div>';
 
     // 人を足すところ（部門の見出しのすぐ下に置く）
-    let tsuika =
-      '<div class="hito-tsuika">' +
-        '<select id="hito-waku-' + kaiBangou + '-' + bumon.id + '">';
+    // 枠を選ぶリスト（下に置く）
+    let erabu = '<select id="hito-waku-' + kaiBangou + '-' + bumon.id + '">';
 
     for (const waku of WAKU_LIST) {
-      tsuika = tsuika + '<option value="' + waku.id + '">' + waku.mei + ' に追加</option>';
+      erabu = erabu + '<option value="' + waku.id + '">' + waku.mei + ' に追加</option>';
     }
 
-    tsuika = tsuika +
-        '</select>' +
-        '<input class="ran" id="hito-ran-' + kaiBangou + '-' + bumon.id + '" placeholder="' + bumon.mei + 'の名前">' +
-        '<button class="btn" onclick="hitoWoTasu(' + kaiBangou + ', \'' + bumon.id + '\')">追加</button>' +
+    erabu = erabu + '</select>';
+
+    // 人を足すところ（名前が上、枠のリストが下）
+    const tsuika =
+      '<div class="hito-tsuika">' +
+        '<div>' +
+          '<input class="ran" id="hito-ran-' + kaiBangou + '-' + bumon.id + '" placeholder="' + bumon.mei + 'の名前">' +
+          '<button class="btn" onclick="hitoWoTasu(' + kaiBangou + ', \'' + bumon.id + '\')">追加</button>' +
+        '</div>' +
+        '<div>' + erabu + '</div>' +
       '</div>';
 
     zentai = zentai + tsuika;
@@ -1045,30 +1053,20 @@ function keonbuNoNaka(kaiBangou, kai) {
       const atsumeta = bumonWakuNoHito(kai, bumon.id, waku.id);
       const kagi = bumon.id + "-" + waku.id;
 
-      let dasu;
-      let midashi;
+      // 3つとも押して開け閉めできる（カード全体で、同時に開くのは1つだけ）
+      const dasu = (kai.hiraitaWaku === kagi);
 
-      if (waku.id === "kettei") {
-        dasu = true;
-        midashi =
-          '<div class="waku-midashi">' +
-            waku.mei + '　' + atsumeta.length + '名' +
-          '</div>';
+      let yajirushi;
+      if (dasu) {
+        yajirushi = "▼︎";
       } else {
-        dasu = (kai.hiraitaWaku === kagi);
-
-        let yajirushi;
-        if (dasu) {
-          yajirushi = "▼︎";
-        } else {
-          yajirushi = "▶︎";
-        }
-
-        midashi =
-          '<div class="waku-midashi oseru" onclick="wakuWoHiraku(' + kaiBangou + ', \'' + kagi + '\')">' +
-            yajirushi + ' ' + waku.mei + '　' + atsumeta.length + '名' +
-          '</div>';
+        yajirushi = "▶︎";
       }
+
+      const midashi =
+        '<div class="waku-midashi oseru" onclick="wakuWoHiraku(' + kaiBangou + ', \'' + kagi + '\')">' +
+          yajirushi + ' ' + waku.mei + '　' + atsumeta.length + '名' +
+        '</div>';
 
       zentai = zentai + midashi;
 
