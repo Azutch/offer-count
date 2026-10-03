@@ -77,7 +77,22 @@
     cursor: pointer;
   }
   /* イベント名と日付を1行にまとめたもの */
+  /* イベント名を書き換え中の入力欄 */
+  .title-ran {
+    font-size: 22px;
+    font-weight: bold;
+    padding: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    border: 2px solid #7a7a8a;
+    border-radius: 6px;
+    background: #1f1f25;
+    color: #f2f2f4;
+    margin: 0 0 6px 0;
+  }
+
   .midashi-gyou {
+    user-select: none;
     font-size: 22px;
     font-weight: bold;
     color: #f2f2f4;
@@ -819,7 +834,7 @@ function taskWoTsukeru(kaiBangou, taskId) {
   }
 
   // タスクの名前を探す
-  const ichiran = TASK_LIST[kai.eventMei];
+  const ichiran = TASK_LIST[kai.shurui];
   let mei = taskId;
 
   for (const task of ichiran) {
@@ -861,7 +876,7 @@ function taskWoHazusu(kaiBangou, taskId) {
 
 // タスクの見た目を作る
 function taskNoMitame(kaiBangou, kai) {
-  const ichiran = TASK_LIST[kai.eventMei];
+  const ichiran = TASK_LIST[kai.shurui];
 
   // 知らないイベントなら、何も出さない
   if (!ichiran) {
@@ -1081,7 +1096,7 @@ let sethyouGazou = "";
 
 // 受付から、画像をもらってくる
 async function sethyouWoYomu() {
-  const henji = await fetch("/sethyou");
+  const henji = await fetch("/sethtou");
   const data = await henji.json();
 
   sethyouGazou = data.gazou;
@@ -1090,7 +1105,7 @@ async function sethyouWoYomu() {
 
 // 受付に、画像を預ける
 function sethyouWoHozon() {
-  fetch("/sethyou", {
+  fetch("/sethtou", {
     method: "POST",
     body: sethyouGazou
   });
@@ -1300,7 +1315,7 @@ function setteiWoHiraku() {
 
     // 出演決定の人数を出す
     let ninzuu;
-    if (kai.eventMei === "#けーおんぶ") {
+    if (kai.shurui === "#けーおんぶ") {
       ninzuu = bumonWakuNoNinzuu(kai, "dj", "kettei") + bumonWakuNoNinzuu(kai, "vj", "kettei");
     } else {
       ninzuu = wakuNoNinzuu(kai, "kettei");
@@ -1337,7 +1352,7 @@ function archiveWoMiru(kaiBangou) {
 
   let nakami = "";
 
-  if (kai.eventMei === "#けーおんぶ") {
+  if (kai.shurui === "#けーおんぶ") {
     // DJ / VJ ごとに書き出す
     for (const bumon of KEONBU_BUMON) {
       nakami = nakami + '<div class="miru-midashi">' + bumon.mei + '</div>';
@@ -1498,7 +1513,7 @@ async function yomikomu() {
 
   for (const kai of data) {
     kai.hiraiteru = false;
-    if (kai.eventMei === "#けーおんぶ") {
+    if (kai.shurui === "#けーおんぶ") {
       kai.hiraitaWaku = "dj-kettei";
     } else {
       kai.hiraitaWaku = "kettei";
@@ -1521,6 +1536,18 @@ async function yomikomu() {
     if (kai.teDeModosita !== true) {
       kai.teDeModosita = false;
     }
+
+    // 「種類」がまだ無いデータには、いまの名前から決めて入れておく
+    if (!kai.shurui) {
+      if (KIMATTA_NINZUU[kai.eventMei]) {
+        kai.shurui = kai.eventMei;
+      } else {
+        kai.shurui = "キャンユニ";
+      }
+    }
+
+    // イベント名を書き換え中かどうか
+    kai.titleHenshuu = false;
   }
 
   kaiList = data;
@@ -1534,6 +1561,7 @@ function hozon() {
   const okuruMono = kaiList.map(function (kai) {
     return {
       eventMei: kai.eventMei,
+      shurui: kai.shurui,
       hizuke: kai.hizuke,
       hitsuyouNinzuu: kai.hitsuyouNinzuu,
       bandList: kai.bandList,
@@ -1721,6 +1749,7 @@ function kaiWoTasu() {
 
   kaiList.push({
     eventMei: eventMei,
+    shurui: eventMei,
     hizuke: hizuke,
     hitsuyouNinzuu: ninzuu,
     bandList: [],
@@ -1731,6 +1760,7 @@ function kaiWoTasu() {
     hiraitaWaku: saishoNoWaku,
     hiraitaBand: -1,
     henshuuChuu: -1,
+    titleHenshuu: false,
     bumonHiraki: { dj: true, vj: true }
   });
 
@@ -1848,6 +1878,71 @@ function bandWoHiraku(kaiBangou, bandBangou) {
 // --- 長押しの見張り ---
 
 // 指が触れた（またはマウスを押した）
+// ------------------------------
+// イベント名の長押し
+//   短く押す → カードの開け閉め
+//   長く押す → 名前を書き換える
+// ------------------------------
+let titleTokei = null;
+let titleNagaoshiShita = false;
+
+
+function titleOshiHajime(kaiBangou) {
+  titleNagaoshiShita = false;
+
+  titleTokei = setTimeout(function () {
+    titleNagaoshiShita = true;
+    titleHenshuuKaishi(kaiBangou);
+  }, 600);
+}
+
+
+function titleOshiOwari(kaiBangou) {
+  clearTimeout(titleTokei);
+
+  // 長押しになっていたら、開け閉めはしない
+  if (titleNagaoshiShita) {
+    titleNagaoshiShita = false;
+    return;
+  }
+
+  kirikaeru(kaiBangou);
+}
+
+
+function titleOshiChuushi() {
+  clearTimeout(titleTokei);
+}
+
+
+function titleHenshuuKaishi(kaiBangou) {
+  kaiList[kaiBangou].titleHenshuu = true;
+  kakidasu();
+
+  const ran = document.getElementById("title-ran-" + kaiBangou);
+  if (ran) {
+    ran.focus();
+    ran.select();
+  }
+}
+
+
+function titleHenshuuOwari(kaiBangou, atarashiiMei) {
+  const namae = atarashiiMei.trim();
+
+  // 空っぽでなければ、書き換える
+  if (namae !== "") {
+    oboeru();
+    kaiList[kaiBangou].eventMei = namae;
+  }
+
+  kaiList[kaiBangou].titleHenshuu = false;
+
+  kakidasu();
+  hozon();
+}
+
+
 function nagaoshiHajime(kaiBangou, bandBangou) {
   nagaoshiShita = false;
 
@@ -2333,7 +2428,7 @@ function kakidasu() {
       continue;
     }
 
-    const keonbu = (kai.eventMei === "#けーおんぶ");
+    const keonbu = (kai.shurui === "#けーおんぶ");
 
     let atamaBubun;
     if (keonbu) {
@@ -2361,12 +2456,37 @@ function kakidasu() {
     const card = document.createElement("div");
     card.className = "kai";
 
+    // 見出しの部分（書き換え中かどうかで変わる）
+    let midashiBubun;
+
+    if (kai.titleHenshuu) {
+      // 書き換え中 → 入力欄
+      midashiBubun =
+        '<input class="title-ran" id="title-ran-' + kaiBangou + '"' +
+          ' value="' + kai.eventMei + '"' +
+          ' onclick="event.stopPropagation()"' +
+          ' onblur="titleHenshuuOwari(' + kaiBangou + ', this.value)">';
+    } else {
+      // 普段 → 短く押すと開閉、長く押すと書き換え
+      midashiBubun =
+        '<div class="midashi-waku">' +
+          '<div class="midashi-gyou"' +
+            ' onclick="event.stopPropagation()"' +
+            ' onmousedown="titleOshiHajime(' + kaiBangou + ')"' +
+            ' onmouseup="titleOshiOwari(' + kaiBangou + ')"' +
+            ' onmouseleave="titleOshiChuushi()"' +
+            ' ontouchstart="titleOshiHajime(' + kaiBangou + ')"' +
+            ' ontouchend="event.preventDefault(); titleOshiOwari(' + kaiBangou + ')"' +
+            ' ontouchmove="titleOshiChuushi()">' +
+            kai.eventMei + ' ' + hizukeWoMijikaku(kai.hizuke) +
+          '</div>' +
+          shuushiBotan +
+        '</div>';
+    }
+
     card.innerHTML =
       '<div class="kai-atama" onclick="kirikaeru(' + kaiBangou + ')">' +
-        '<div class="midashi-waku">' +
-          '<div class="midashi-gyou">' + kai.eventMei + ' ' + hizukeWoMijikaku(kai.hizuke) + '</div>' +
-          shuushiBotan +
-        '</div>' +
+        midashiBubun +
         atamaBubun +
       '</div>' +
       taskNoMitame(kaiBangou, kai) +
